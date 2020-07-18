@@ -1,6 +1,6 @@
 package http
 
-import "gitlab.com/evzpav/documents/pkg/errors"
+import "gitlab.com/evzpav/user-auth/pkg/errors"
 
 var (
 	ErrInvalidBodyRequestCode errors.Code = "INVALID_BODY"

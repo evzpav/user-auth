@@ -3,8 +3,8 @@ package document
 import (
 	"context"
 
-	"gitlab.com/evzpav/documents/internal/domain"
-	"gitlab.com/evzpav/documents/pkg/errors"
+	"gitlab.com/evzpav/user-auth/internal/domain"
+	"gitlab.com/evzpav/user-auth/pkg/errors"
 )
 
 type service struct {

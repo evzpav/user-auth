@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/evzpav/documents/pkg/log"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )

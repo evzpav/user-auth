@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/evzpav/documents/pkg/log"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/evzpav/documents/internal/infrastructure/server/http"
+	"gitlab.com/evzpav/user-auth/internal/infrastructure/server/http"
 )
 
 func TestServer_ListenAndServe(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/evzpav/documents/pkg/errors"
+	"gitlab.com/evzpav/user-auth/pkg/errors"
 )
 
 func TestNewNotAuthorized(t *testing.T) {

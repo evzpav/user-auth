@@ -3,7 +3,7 @@ package errors_test
 import (
 	"testing"
 
-	"gitlab.com/evzpav/documents/pkg/errors"
+	"gitlab.com/evzpav/user-auth/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )

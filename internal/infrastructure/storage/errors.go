@@ -1,6 +1,6 @@
 package storage
 
-import "gitlab.com/evzpav/documents/pkg/errors"
+import "gitlab.com/evzpav/user-auth/pkg/errors"
 
 const (
 	ErrDocumentNotFound   errors.Code = "DOCUMENT_NOT_FOUND"

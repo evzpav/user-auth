@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/evzpav/documents/pkg/trace"
+	"gitlab.com/evzpav/user-auth/pkg/trace"
 )
 
 func (h *handler) traceHeader() gin.HandlerFunc {

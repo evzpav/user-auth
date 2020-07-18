@@ -27,7 +27,7 @@ To view this documentation locally use the following command:
 ```bash
 make run-swagger
 ```
-The same documentation is available online and can be accessed by clicking [here](https://gitlab.com/evzpav/documents/api/index.html).
+The same documentation is available online and can be accessed by clicking [here](https://gitlab.com/evzpav/user-auth/api/index.html).
 
 
 _API routes documentation generate by [Swagger-UI](https://github.com/swagger-api/swagger-ui)._
@@ -95,7 +95,7 @@ To view report of tests locally use the following command:
 make test
 ```
 
-The same report is available online and can be accessed by clicking [here](https://gitlab.com/evzpav/documents/coverage/index.html).
+The same report is available online and can be accessed by clicking [here](https://gitlab.com/evzpav/user-auth/coverage/index.html).
 
 _Coverage report generate by [Gocov](https://github.com/axw/gocov)._
 

@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"gitlab.com/evzpav/documents/pkg/log"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 // GetString ...

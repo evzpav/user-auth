@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/evzpav/documents/internal/domain"
+	"gitlab.com/evzpav/user-auth/internal/domain"
 )
 
 func TestValidadeDocument(t *testing.T) {

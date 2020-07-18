@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.com/evzpav/documents/pkg/errors"
+	"gitlab.com/evzpav/user-auth/pkg/errors"
 )
 
 //RFC7807Title is an internal type to handle with RFC7807 title

@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"gitlab.com/evzpav/documents/pkg/errors"
+	"gitlab.com/evzpav/user-auth/pkg/errors"
 )
 
 type Document struct {

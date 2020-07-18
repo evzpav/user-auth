@@ -3,7 +3,7 @@ package document
 import (
 	"context"
 
-	"gitlab.com/evzpav/documents/internal/domain"
+	"gitlab.com/evzpav/user-auth/internal/domain"
 )
 
 // ServiceMock is the mock implementation of DocumentService

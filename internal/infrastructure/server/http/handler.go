@@ -3,36 +3,25 @@ package http
 import (
 	"net/http"
 
-	"gitlab.com/evzpav/documents/internal/domain"
-	"gitlab.com/evzpav/documents/pkg/log"
-
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
+	"gitlab.com/evzpav/user-auth/internal/domain"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 type handler struct {
-	documentService domain.DocumentService
-
-	log log.Logger
+	userService domain.UserService
+	log         log.Logger
 }
 
 // NewHandler ...
-func NewHandler(ls domain.DocumentService, log log.Logger) http.Handler {
+func NewHandler(us domain.UserService, log log.Logger) http.Handler {
 	handler := &handler{
-		documentService: ls,
-		log:             log,
+		userService: us,
+		log:         log,
 	}
 
-	gin.SetMode(gin.ReleaseMode)
+	r := mux.NewRouter()
+	r.HandleFunc("/login", handler.getLogin).Methods("GET")
 
-	router := gin.New()
-	router.Use(handler.logger(), handler.traceHeader(), handler.recovery())
-
-	router.GET("/documents", handler.getDocuments)
-	router.GET("/document/:id", handler.getDocument)
-	router.POST("/document", handler.postDocument)
-	router.PUT("/document/:id", handler.putDocument)
-	router.DELETE("/document/:id", handler.deleteDocument)
-	// router.GET("/status", handler.serverStatus)
-
-	return router
+	return r
 }

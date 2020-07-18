@@ -1,30 +1,27 @@
 package main
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
-	document "gitlab.com/evzpav/documents/internal/domain/document"
-	"gitlab.com/evzpav/documents/pkg/env"
-	"gitlab.com/evzpav/documents/pkg/log"
+	"gitlab.com/evzpav/user-auth/internal/domain/user"
+	"gitlab.com/evzpav/user-auth/pkg/env"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 
-	"gitlab.com/evzpav/documents/internal/infrastructure/server/http"
-	"gitlab.com/evzpav/documents/internal/infrastructure/storage/mongo"
+	"gitlab.com/evzpav/user-auth/internal/infrastructure/server/http"
+	mysql "gitlab.com/evzpav/user-auth/internal/infrastructure/storage/mysql"
 )
 
 const (
-	envVarDocumentsHost = "DOCUMENTS_HOST"
-	envVarDocumentsPort = "DOCUMENTS_PORT"
-	envVarLoggerLevel   = "LOGGER_LEVEL"
-	envVarMongoURL      = "MONGO_URL"
-	envVarDatabaseName  = "DATABASE_NAME"
+	envVarHost        = "HOST"
+	envVarPort        = "PORT"
+	envVarLoggerLevel = "LOGGER_LEVEL"
+	envVarMySQLURL    = "MYSQL_URL"
 
-	defaultDocumentsHost = ""
-	defaultDocumentsPort = "5001"
-	defaultLoggerLevel   = "info"
-	defaultDatabaseName  = "documents"
+	defaultProjectHost = ""
+	defaultProjectPort = "5001"
+	defaultLoggerLevel = "info"
 )
 
 var (
@@ -32,42 +29,39 @@ var (
 )
 
 func main() {
-	log := log.NewZeroLog("Documents", version, log.Level(getLoggerLevel()))
+	log := log.NewZeroLog("user-auth", version, log.Level(getLoggerLevel()))
 
-	log.Info().Sendf("Documents - build:%s; date:%s", build, date)
+	log.Info().Sendf("use-auth - build:%s; date:%s", build, date)
 
-	// Check environments
-	env.CheckRequired(log, envVarMongoURL)
-
-	// mongo client
-	ctx := context.Background()
-	mongoClient, err := mongo.Connect(ctx, getMongoURL())
+	db, err := mysql.New(getMySQLURL())
 	if err != nil {
-		log.Fatal().Err(err).Sendf("error connecting database: %v", err)
-		return
+		log.Fatal().Err(err).Sendf("failed to connect to mysql: %v", err)
 	}
 
-	defer func() {
-		if err := mongoClient.Disconnect(ctx); err != nil {
-			log.Error().Err(err).Sendf("error disconnecting database: %v", err)
-		}
-	}()
+	defer db.Close()
 
-	database := mongo.NewDatabase(mongoClient, getDatabaseName())
+	// if err := mysql.NewMigration(getMySQLURL()).Up(); err != nil {
+	// 	log.Fatal().Sendf("Could not run migrations: %v", err)
+	// }
+
+	// Check environments
+	// env.CheckRequired(log, envVarMySQLURL)
+
+	// ctx := context.Background()
 
 	// storages
-	documentStorage, err := mongo.NewDocumentStorage(database, log)
+	userStorage, err := mysql.NewUserStorage(db, log)
 	if err != nil {
 		log.Fatal().Err(err).Sendf("error creating storage: %v", err)
 	}
 
 	// services
-	documentService := document.NewService(documentStorage)
+	userService := user.NewService(userStorage)
 
 	// HTTP Server
 
-	handler := http.NewHandler(documentService, log)
-	server := http.New(handler, getDocumentsHost(), getDocumentsPort(), log)
+	handler := http.NewHandler(userService, log)
+	server := http.New(handler, getProjectHost(), getProjectPort(), log)
 	server.ListenAndServe()
 
 	// Graceful shutdown
@@ -77,22 +71,18 @@ func main() {
 	server.Shutdown()
 }
 
-func getDocumentsHost() string {
-	return env.GetString(envVarDocumentsHost, defaultDocumentsHost)
+func getProjectHost() string {
+	return env.GetString(envVarHost, defaultProjectHost)
 }
 
-func getDocumentsPort() string {
-	return env.GetString(envVarDocumentsPort, defaultDocumentsPort)
+func getProjectPort() string {
+	return env.GetString(envVarPort, defaultProjectPort)
 }
 
 func getLoggerLevel() string {
 	return env.GetString(envVarLoggerLevel, defaultLoggerLevel)
 }
 
-func getMongoURL() string {
-	return env.GetString(envVarMongoURL)
-}
-
-func getDatabaseName() string {
-	return env.GetString(envVarDatabaseName, defaultDatabaseName)
+func getMySQLURL() string {
+	return env.GetString(envVarMySQLURL)
 }

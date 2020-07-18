@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/evzpav/documents/pkg/env"
-	"gitlab.com/evzpav/documents/pkg/log"
+	"gitlab.com/evzpav/use-auth/pkg/env"
+	"gitlab.com/evzpav/use-auth/pkg/log"
 )
 
 var (
-	testLog log.Logger = log.NewZeroLog("documents-test", "", log.Error)
+	testLog log.Logger = log.NewZeroLog("use-auth-test", "", log.Error)
 )
 
 func TestGetString(t *testing.T) {

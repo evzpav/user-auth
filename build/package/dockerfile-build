@@ -1,6 +1,6 @@
 # --- Base ----
 FROM golang:1.13-stretch AS base
-WORKDIR $GOPATH/src/gitlab.com/evzpav/documents
+WORKDIR $GOPATH/src/gitlab.com/evzpav/user-auth
 
 # ---- Dependencies ----
 FROM base AS dependencies

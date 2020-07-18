@@ -13,13 +13,15 @@ VERSION  	  	= $(shell git describe --always --tags)
 NAME           	= $(shell basename $(CURDIR))
 IMAGE          	= $(REGISTRY)/$(REGISTRY_GROUP)/$(NAME):$(BUILD)
 
-MONGO_NAME				= mongodb_$(NAME)$(PIPELINE_ID)
+MYSQL_NAME				= mysqldb_$(NAME)$(PIPELINE_ID)
 NETWORK_NAME			= network_$(NAME)$(PIPELINE_ID)
 NGINX_NAME				= nginx_$(NAME)$(PIPELINE_ID)
 ACCEPTANCE_NETWORK		= acceptance_$(NETWORK_NAME)
-ACCEPTANCE_MONGO		= acceptance_$(MONGO_NAME)
+ACCEPTANCE_MONGO		= acceptance_$(MYSQL_NAME)
 ACCEPTANCE_APP_NAME		= app_$(NAME)$(PIPELINE_ID)
 ACCEPTANCE_TESTS_IMAGE 	= acceptance_tests_$(NAME)$(PIPELINE_ID)
+
+MYSQL_PASSWORD = mysqlpassword
 
 git-config:
 	git config --replace-all core.hooksPath .githooks
@@ -46,22 +48,46 @@ lint: ##@check Run lint on docker.
 		--target=lint \
 		--file=./build/package/dockerfile-lint .
 
-env: ##@environment Create network and run mongo container.
-	- docker network create $(NETWORK_NAME)
-	./scripts/start_mongo.sh $(MONGO_NAME) $(NETWORK_NAME)
+build-mysql: ##@mysql build mysql docker image
+	DOCKER_BUILDKIT=1 \
+	docker build \
+	--progress=plain \
+	-t mysql_$(NAME):$(VERSION) \
+	-f ./docker/mysql/Dockerfile \
+	./docker/mysql/
+
+run-mysql: build-mysql  ##@mysql run mysql on docker
+	DOCKER_BUILDKIT=1 \
+	docker run --rm -d \
+		-v $(HOME)/Documents/mysqldata:/var/lib/mysqldata/data \
+		-p 3306:3306 \
+		--name mysql_$(NAME) \
+		-e MYSQL_ROOT_PASSWORD=$(MYSQL_PASSWORD) \
+		mysql_$(NAME):$(VERSION)
+
+# env: ##@environment Create network and run mysql container.
+# 	# - docker network create $(NETWORK_NAME)	
+# 	DOCKER_BUILDKIT=1 \
+# 	docker run --rm -d \
+# 		--name $(MYSQL_NAME) \
+# 		-p 3306:3306 \
+# 		-v $(HOME)/Documents/mysqldata:/var/lib/mysqldata/data \
+# 		-e MYSQL_ROOT_PASSWORD=$(MYSQL_PASSWORD) \
+# 		mysql:8.0
+
 
 env-ip: ##@environment Return local MongoDB IP (from Docker container)
-	@echo $$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(MONGO_NAME))
+	@echo $$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(MYSQL_NAME))
 
 env-stop: ##@environment Remove mongo container and remove network.
-	-docker rm -vf $(MONGO_NAME)
-	-docker network rm $(NETWORK_NAME)
+	-docker rm -vf $(MYSQL_NAME)
+	# -docker network rm $(NETWORK_NAME)
 
 test: ##@check Run tests and coverage.
 	docker build --progress=plain \
 		--network $(NETWORK_NAME) \
 		--tag $(IMAGE) \
-		--build-arg MONGO_URL=mongodb://${MONGO_NAME}:27017 \
+		--build-arg MONGO_URL=mongodb://${MYSQL_NAME}:27017 \
 		--target=test \
 		--file=./build/package/dockerfile-test .
 
@@ -98,22 +124,22 @@ push: check-env-VERSION ##@build Push docker image to registry.
 	docker push $(REGISTRY)/$(REGISTRY_GROUP)/$(NAME):$(VERSION)
 
 build-local: ##@dev Build binary locally
-	-rm ./documents
+	-rm ./user-auth
 
 	CGO_ENABLED=0 \
 	GOOS=linux  \
 	GOARCH=amd64  \
-	go build -installsuffix cgo -o documents -ldflags \
+	go build -installsuffix cgo -o user-auth -ldflags \
 	"-X main.version=${VERSION} -X main.build=${BUILD} -X main.date=${DATE}" \
 	./cmd/server/main.go
 
 
 run-local: build-local ##@dev Run locally.
-	DOCUMENTS_HOST=localhost \
-	DOCUMENTS_PORT=5001 \
+	HOST=localhost \
+	PORT=5001 \
 	LOGGER_LEVEL=debug \
-	MONGO_URL=mongodb://$$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(MONGO_NAME)):27017 \
-	./documents
+	MYSQL_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
+	./user-auth
 
 run-docker: remove-docker ##@docker Run docker container.
 	docker run \

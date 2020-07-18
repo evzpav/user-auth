@@ -1,5 +1,5 @@
 FROM node:lts-alpine
-WORKDIR $GOPATH/src/gitlab.com/evzpav/documents/test
+WORKDIR $GOPATH/src/gitlab.com/evzpav/user-auth/test
 
 COPY ./test/acceptance/nginx/config/package*.json ./
 

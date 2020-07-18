@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	document "gitlab.com/evzpav/documents/internal/domain/document"
+	document "gitlab.com/evzpav/user-auth/internal/domain/document"
 
-	"gitlab.com/evzpav/documents/internal/domain"
+	"gitlab.com/evzpav/user-auth/internal/domain"
 )
 
 func TestDocumentService_Insert(t *testing.T) {
