@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/evzpav/use-auth/pkg/env"
-	"gitlab.com/evzpav/use-auth/pkg/log"
+	"gitlab.com/evzpav/user-auth/pkg/env"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 var (

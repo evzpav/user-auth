@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"gitlab.com/evzpav/user-auth/internal/domain/template"
 	"gitlab.com/evzpav/user-auth/internal/domain/user"
 	"gitlab.com/evzpav/user-auth/pkg/env"
 	"gitlab.com/evzpav/user-auth/pkg/log"
@@ -33,6 +34,8 @@ func main() {
 
 	log.Info().Sendf("use-auth - build:%s; date:%s", build, date)
 
+	env.CheckRequired(log, envVarMySQLURL)
+
 	db, err := mysql.New(getMySQLURL())
 	if err != nil {
 		log.Fatal().Err(err).Sendf("failed to connect to mysql: %v", err)
@@ -45,7 +48,6 @@ func main() {
 	// }
 
 	// Check environments
-	// env.CheckRequired(log, envVarMySQLURL)
 
 	// ctx := context.Background()
 
@@ -57,10 +59,11 @@ func main() {
 
 	// services
 	userService := user.NewService(userStorage)
+	templateService := template.NewService()
 
 	// HTTP Server
 
-	handler := http.NewHandler(userService, log)
+	handler := http.NewHandler(userService, templateService, log)
 	server := http.New(handler, getProjectHost(), getProjectPort(), log)
 	server.ListenAndServe()
 

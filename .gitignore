@@ -9,7 +9,7 @@ public/
 vendor/
 coverage/
 .history
-documents
+user-auth
 
 # js
 node_modules/

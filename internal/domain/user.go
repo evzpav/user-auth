@@ -1,14 +1,10 @@
 package domain
 
-import (
-	"context"
-)
-
 type User struct {
 	Name      string `json:"name"`
 	Address   string `json:"address"`
 	Email     string `json:"email"`
-	Pssword   string `json:"password"`
+	Password  []byte `json:"password"`
 	Telephone string `json:"telephone"`
 }
 
@@ -34,7 +30,7 @@ type UserService interface {
 }
 
 type UserStorage interface {
-	Insert(ctx context.Context, user *User) (*User, error)
+	// Insert(ctx context.Context, user *User) (*User, error)
 	// FindOne(ctx context.Context, ID string) (*User, error)
 	// Set(ctx context.Context, user *User) (*User, error)
 	// Remove(ctx context.Context, ID string) error
