@@ -1,0 +1,12 @@
+const token = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdWQiLCJleHAiOjIwNDMxNDY0NjEsImlzcyI6ImlzcyIsInN1YiI6ImZha2UtYXBwbGljYXRpb24taWQiLCJjaWQiOiJmYWtlLWNsaWVudC1pZCIsImNhbiI6IkZha2UgQXBwbGljYXRpb24iLCJzY29wZXMiOlsicGFja2FnZXMiLCJjb25maWdzIl19.lHVIga4XDFgQ43IaNn1jOlODaS9TLIqpWPAJXOBof17kOu5FDSBH14XBPn581snW-EN3JIHE3zG6usaXAMD5Fk6aCNMNDLxFxxi87D3GfpdAA_O_XXNhsoswUGCnC72M_V0Y_oxfJond0eq-0W-weIC8BDdqkX2JjS3j-BswxX-rmmgVAmeRR7eK-msisbDeQSBYQk1SgY3FC8axcXNrgXs3YEwgR1TbsFNziSX4_gK82PnOA63mjz_hD9YVJyg32OhoPvAFvI_rA0paQ1gEXibnvCb6izCfoI2Rjauc2FJFGpz1zNuRt2EfS7QMQdu3MQg01WFGWRds3peUK3ydhQ";
+
+
+const config = {
+	server: process.env.APP_HOST,
+	headers: {
+		"Authorization": token,
+		"Content-Type": "application/json"
+	}
+}
+
+module.exports = config;

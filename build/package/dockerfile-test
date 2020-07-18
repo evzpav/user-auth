@@ -1,0 +1,20 @@
+# --- Base ----
+FROM golang:1.13-stretch AS base
+WORKDIR $GOPATH/src/gitlab.com/evzpav/documents
+
+# ---- Dependencies ----
+FROM base AS dependencies
+ENV GO111MODULE=on
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+RUN go get -u github.com/axw/gocov/gocov && GO111MODULE=off go get -u gopkg.in/matm/v1/gocov-html
+
+# ---- Test ----
+FROM dependencies AS test
+COPY . .
+ARG MONGO_URL
+RUN MONGO_URL=$MONGO_URL go test -v -cpu 1 -failfast -coverprofile=coverage.out -covermode=set ./...
+RUN gocov convert coverage.out | gocov-html > /index.html
+RUN grep -v "_mock" coverage.out >> filtered_coverage.out
+RUN go tool cover -func filtered_coverage.out

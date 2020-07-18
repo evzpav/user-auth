@@ -1,0 +1,112 @@
+stages:
+  - build
+  - lint
+  - test
+  - package
+  - acceptance_test
+  - push
+  - pages
+
+before_script:
+  - export PIPELINE_ID=$CI_PIPELINE_ID
+
+build:
+  stage: build
+  tags:
+    - shell
+  script:
+    - make build
+  except:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+$/
+
+lint:
+  stage: lint
+  tags:
+    - shell
+  script:
+    - make lint
+  except:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+$/
+
+test:
+  stage: test
+  tags:
+    - shell
+  before_script:
+    - export PIPELINE_ID=$CI_PIPELINE_ID
+    - make env
+  script:
+    - make test
+  after_script:
+    - export PIPELINE_ID=$CI_PIPELINE_ID
+    - make env-stop
+  except:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+$/
+  artifacts:
+    when: always
+    paths:
+      - coverage
+    expire_in: 1 days
+  coverage: '/total\:\s*\(statements\)\s*\d{1,}\.\d\%/'
+
+package:
+  stage: package
+  tags:
+    - shell
+  dependencies:
+    - test
+    - build
+  except:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+$/
+  script:
+    - make image
+
+acceptance_test:
+  stage: acceptance_test
+  tags:
+    - shell
+  dependencies:
+    - package
+  before_script:
+    - export PIPELINE_ID=$CI_PIPELINE_ID
+    - make env-acceptance-tests
+  script:
+    - make do-acceptance-tests
+  after_script:
+    - export PIPELINE_ID=$CI_PIPELINE_ID
+    - make stop-env-acceptance-tests
+  except:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+$/
+
+push:
+  stage: push
+  tags:
+    - shell
+  only:
+    - /^[\d]+.{1}[\d]+.{1}[\d]+-{1}[\d]+$/
+  dependencies:
+    - test
+    - build
+    - package
+    - acceptance_test
+  script:
+    - make tag push
+
+pages:
+  stage: pages
+  tags:
+    - shell
+  only:
+    - master
+  dependencies:
+    - test
+  script:
+    - mkdir public
+    - mv coverage/ public/
+    - mv api/ public/
+  artifacts:
+    untracked: true
+    when: always
+    paths:
+      - public
+    expire_in: 360 days

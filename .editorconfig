@@ -1,0 +1,22 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+[{*.js,*.json,*.yml,*.yaml}]
+indent_style = tab
+indent_size = 4
+
+[{Dockerfile,nginx.conf}]
+indent_size = 4
+
+[{Makefile,*.mk,*.go}]
+indent_style = tab
+indent_size = 4
+
+[{nginx.conf,*.puml}]
+indent_style = space
+indent_size = 4

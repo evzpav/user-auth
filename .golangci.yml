@@ -1,0 +1,35 @@
+run:
+  deadline: 5m
+  tests: false
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - errcheck
+    - gosec
+    - goconst
+    - gocyclo
+    - golint
+    - ineffassign
+    - interfacer
+    - maligned
+    - megacheck
+    - structcheck
+    - unconvert
+    - varcheck
+    - vet
+    - vetshadow
+    - typecheck
+
+issues:
+  exclude-use-default: false
+  max-same-issues: 200
+  max-issues-per-linter: 200
+  exclude-rules:
+  - text: "^(exported func)? .*? (returns unexported type)? .*?(which can be annoying to use)$" #e.g.: exported func New returns unexported type *http.server, which can be annoying to use (golint).
+    linters:
+      - golint
+  - text: "^(exported)? .*? (should have comment)? ?.*? (or be unexported)?$" #e.g.: exported const NotifierModeFixed should have comment (or a comment on this block) or be unexported
+    linters:
+      - golint

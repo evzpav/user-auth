@@ -1,0 +1,15 @@
+*.iml
+.idea/
+.vscode/
+*.*#
+.DS_Store
+debug
+debug.test
+public/
+vendor/
+coverage/
+.history
+documents
+
+# js
+node_modules/

@@ -1,0 +1,235 @@
+openapi: 3.0.1
+info:
+ title: Documents
+ description: 'Documents is a REST API for a CRUD of documents'
+ version: 1.0.0
+servers:
+- url: http://localhost:5001
+
+paths:
+  /documents:
+    get:
+      tags:
+      - documents
+      summary: Get documents
+      description: Desc.
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404'
+
+    post:
+      tags:
+        - documents
+      summary: Add a new document
+      requestBody:
+        $ref: '#/components/requestBodies/Document'
+      responses:
+        201:
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404'
+        409:
+          $ref: '#/components/responses/409'
+
+
+  /document/:id:
+    get:
+      tags:
+        - documents
+      summary: Get default reference by ID
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404'
+    put:
+      tags:
+        - documents
+      summary: Update an existing document
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Document'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404'
+
+
+    delete:
+      tags:
+        - documents
+      summary: Remove an existing document
+      parameters:
+        - $ref: '#/components/parameters/ReferenceId'
+      responses:
+        204:
+          description: No content
+        404:
+          $ref: '#/components/responses/404'
+
+components:
+  parameters:
+    DocumentId:
+        name: Document Id
+        in: path
+        description: ID of document
+        required: true
+        schema:
+          $ref: '#/components/schemas/DocumentId'
+  requestBodies:
+    reference:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Document'
+      required: true
+
+  responses:
+    400:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            400:
+             value:
+                type: "about:blank"
+                status: "400"
+                code: "<< ERROR_CODE >>"
+                title: "<< title message  >>"
+                detail: "<< message error with more information >>"
+    401:
+      description: Not authorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            401:
+             value:
+                type: "about:blank"
+                status: "401"
+                code: "NOT_AUTHORIZED"
+                title: "not authorized"
+                detail: "token not authorized"
+
+    404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            404:
+             value:
+                type: "about:blank"
+                status: "404"
+                code: "NOT_FOUND"
+                title: "resource not found"
+                detail: "resource not found"
+
+    409:
+      description: Duplicate record
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            409:
+              value:
+                type: "about:blank"
+                status: "409"
+                code: "RESOURCE_DUPLICATED"
+                title: "duplicated record"
+                detail: "resource already exists"
+
+  schemas:
+    Document:
+      type: object
+      required:
+      - value
+      properties:
+        doc_type:
+          $ref: '#/components/schemas/DocType'
+        value:
+          $ref: '#/components/schemas/Value'
+        is_blacklisted:
+          $ref: '#/components/schemas/IsBlacklisted'
+
+    Error:
+      type: object
+      properties:
+        type:
+          type: string
+        status:
+          type: number
+          nullable: true
+        code:
+          type: string
+          nullable: true
+        title:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+        arguments:
+          type: object
+          nullable: true
+
+
+    DocType:
+      type: string
+      example: CPF
+    Value:
+      type: string
+      example: 987.716.169-93
+    IsBlacklisted:
+      type: boolean
+      example: true

@@ -1,0 +1,7 @@
+{
+    "subject": "1",
+	"accesses": [
+        {"object": "documents:cfo.data.isMatriz", "action": ""},
+        {"object": "documents:cfo.data.partes.advogados", "action": ""}
+    ]
+}
