@@ -18,7 +18,7 @@ func NewService(storage domain.UserStorage) *service {
 
 func (us *service) Create(ctx context.Context, user *domain.User) error {
 	if err := user.Validate(); err != nil {
-		return  err
+		return err
 	}
 
 	return us.storage.Insert(ctx, user)
@@ -34,4 +34,12 @@ func (us *service) Update(ctx context.Context, user *domain.User) error {
 
 func (us *service) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	return us.storage.FindByEmail(ctx, email)
+}
+
+func (us *service) FindByToken(ctx context.Context, token string) (*domain.User, error) {
+	return us.storage.FindByToken(ctx, token)
+}
+
+func (us *service) FindByID(ctx context.Context, id int) (*domain.User, error) {
+	return us.storage.FindByID(ctx, id)
 }

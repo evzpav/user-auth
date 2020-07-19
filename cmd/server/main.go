@@ -16,10 +16,12 @@ import (
 )
 
 const (
-	envVarHost        = "HOST"
-	envVarPort        = "PORT"
-	envVarLoggerLevel = "LOGGER_LEVEL"
-	envVarMySQLURL    = "MYSQL_URL"
+	envVarHost          = "HOST"
+	envVarPort          = "PORT"
+	envVarLoggerLevel   = "LOGGER_LEVEL"
+	envVarMySQLURL      = "MYSQL_URL"
+	envVarEmailPassword = "EMAIL_PASSWORD"
+	envVarEmailFrom     = "EMAIL_FROM"
 
 	defaultProjectHost = ""
 	defaultProjectPort = "5001"
@@ -63,7 +65,7 @@ func main() {
 
 	// services
 	userService := user.NewService(userStorage)
-	authService := auth.NewService(userService)
+	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword())
 	templateService := template.NewService()
 
 	// HTTP Server
@@ -93,4 +95,12 @@ func getLoggerLevel() string {
 
 func getMySQLURL() string {
 	return env.GetString(envVarMySQLURL)
+}
+
+func getEmailFrom() string {
+	return env.GetString(envVarEmailFrom)
+}
+
+func getEmailPassword() string {
+	return env.GetString(envVarEmailPassword)
 }

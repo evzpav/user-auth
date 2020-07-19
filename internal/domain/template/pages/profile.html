@@ -1,10 +1,62 @@
 {{define "action"}}
 
-<h1>PROFILE</h1>
-<form method="post" >
-    PROFILE HERER MORO
+<div class="mb-4">
+    <h2><a href="/logout" class="underline">Logout</a></h2>
+</div>
 
+<h1 class="text-lg font-bold mb-4">PROFILE</h1>
+
+<form method="post" action="/profile" class="mb-4">
+    <div class="mb-3">
+        <label class="block text-grey-darker text-sm font-bold mb-2">
+            Email
+        </label>
+        <input type="email" name="email" placeholder="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        {{ with .Errors }}
+        <p class="error">{{ .Email }}</p>
+        {{ end }}   
+    </div>
+  
+    <div class="mb-3">
+        <label class="block text-grey-darker text-sm font-bold mb-2">
+            Name
+        </label>
+        <input type="text" name="name" placeholder="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        {{ with .Errors }}
+        <p class="error">{{ .Name }}</p>
+        {{ end }}   
+    </div>
+
+    <div class="mb-3">
+        <label class="block text-grey-darker text-sm font-bold mb-2">
+            Address
+        </label>
+        <input type="text" name="address" placeholder="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        {{ with .Errors }}
+        <p class="error">{{ .Address }}</p>
+        {{ end }}   
+    </div>
+
+    <div class="mb-3">
+        <label class="block text-grey-darker text-sm font-bold mb-2">
+            Phone
+        </label>
+        <input type="text" name="phone" placeholder="phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        {{ with .Errors }}
+        <p class="error">{{ .Phone }}</p>
+        {{ end }}   
+    </div>
+
+    {{ with .Errors }}
+    <div class="mb-3">
+        <p class="error">{{ .Credentials }}</p>
+    </div>
+    {{ end }}
+    
+    <button class="bg-blue-600 hover:bg-blue-dark text-white font-bold py-2 px-4 rounded" type="submit">
+        Update
+    </button>
 </form>
-<h2><a href="/logout">Logout</a></h2>
+
 
 {{end}}

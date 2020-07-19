@@ -1,4 +1,5 @@
 include help.mk
+include .env
 
 .PHONY: run-local git-config version clean install lint env env-stop test cover build image tag push deploy run run-docker remove-docker
 .DEFAULT_GOAL := help
@@ -138,6 +139,8 @@ run-local: build-local ##@dev Run locally.
 	HOST=localhost \
 	PORT=5001 \
 	LOGGER_LEVEL=debug \
+	EMAIL_FROM=$(EMAIL_FROM) \
+	EMAIL_PASSWORD=$(EMAIL_PASSWORD) \
 	MYSQL_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
 	./user-auth
 

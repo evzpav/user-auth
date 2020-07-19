@@ -3,7 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/smtp"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/errors"
@@ -11,16 +14,20 @@ import (
 )
 
 type service struct {
-	userService domain.UserService
+	userService   domain.UserService
+	emailFrom     string
+	emailPassword string
 }
 
-func NewService(userService domain.UserService) *service {
+func NewService(userService domain.UserService, emailFrom, emailPassword string) *service {
 	return &service{
-		userService: userService,
+		userService:   userService,
+		emailFrom:     emailFrom,
+		emailPassword: emailPassword,
 	}
 }
 
-func (s *service) hash(password string) (string, error) {
+func (s *service) hashPassword(password string) (string, error) {
 	hashedPW, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -56,13 +63,44 @@ func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) e
 
 	token := s.generateToken()
 	authUser.Token = token
+	u.Token = token
 
-	// _, err = s.userService.Update(ctx, u)
+	// u.Token, err = s.GenerateJWTToken(u)
 	// if err != nil {
-	// 	return nil, err
+	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	// }
 
-	return nil
+	return s.userService.Update(ctx, u)
+
+}
+
+func (s *service) Authenticate2(ctx context.Context, authUser *domain.AuthUser) (*domain.User, error) {
+	user, err := s.userService.FindByEmail(ctx, authUser.Email)
+	if err != nil {
+		authUser.Errors["Credentials"] = "invalid credentials"
+		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	}
+
+	if user == nil {
+		authUser.Errors["Credentials"] = "invalid credentials"
+		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	}
+
+	if !s.hashMatchesPassword(user.Password, authUser.Password) {
+		authUser.Errors["Credentials"] = "invalid credentials"
+		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	}
+
+	token := s.generateToken()
+	authUser.Token = token
+	user.Token = token
+
+	if err := s.userService.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+
 }
 
 func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
@@ -76,7 +114,7 @@ func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
 		return fmt.Errorf("email already being used")
 	}
 
-	hashedPassword, err := s.hash(authUser.Password)
+	hashedPassword, err := s.hashPassword(authUser.Password)
 	if err != nil {
 		return err
 	}
@@ -92,4 +130,116 @@ func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
 
 func (s *service) Me(ctx context.Context) (*domain.User, error) {
 	return nil, nil
+}
+
+func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
+	user, err := s.userService.FindByToken(ctx, token)
+	if err != nil {
+		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	}
+	if user == nil {
+		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	}
+
+	// claims, ok := s.validateToken(token)
+	// if !ok {
+	// 	return fmt.Errorf("invalid token")
+	// }
+
+	// id := claims["id"].(int)
+
+	// user, err := s.userService.FindByID(ctx, id)
+	// if err != nil {
+	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	// }
+
+	// if user == nil {
+	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	// }
+
+	// jwtToken, err := s.GenerateJWTToken(user)
+	// if err != nil {
+	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+	// }
+
+	user.Token = s.generateToken()
+
+	return user, s.userService.Update(ctx, user)
+}
+
+// func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
+
+// 	claims, ok := s.validateToken(token)
+// 	if !ok {
+// 		return nil, fmt.Errorf("invalid token")
+// 	}
+
+// 	id := claims["id"].(int)
+
+// 	user, err := s.userService.FindByID(ctx, id)
+// 	if err != nil {
+// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
+
+// 	if user == nil {
+// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
+
+// 	jwtToken, err := s.GenerateJWTToken(user)
+// 	if err != nil {
+// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
+
+// 	user.Token = jwtToken
+
+// 	if err := s.userService.Update(ctx, user); err != nil {
+// 		return nil, err
+// 	}
+
+// 	return user, nil
+// }
+
+func (s *service) GenerateJWTToken(u *domain.User) (string, error) {
+	expire := time.Now().Add(time.Hour * 1)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  u.ID,
+		"e":   u.Email,
+		"a":   u.Address,
+		"p":   u.Phone,
+		"exp": expire.Unix(),
+	})
+
+	tokenString, err := token.SignedString("key") //TODOD ADD VAR
+
+	return tokenString, err
+}
+
+func (s *service) ParseToken(token string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if jwt.SigningMethodHS256 != token.Method {
+			return nil, fmt.Errorf("wrong signing method")
+		}
+		return "key", nil
+	})
+
+}
+
+func (s *service) validateToken(token string) (map[string]interface{}, bool) {
+	jwtToken, err := s.ParseToken(token)
+	if err != nil || !jwtToken.Valid {
+		return nil, false
+	}
+	return jwtToken.Claims.(jwt.MapClaims), true
+}
+
+func (s *service) SendEmail(ctx context.Context, message, toEmail string) error {
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	auth := smtp.PlainAuth("", s.emailFrom, s.emailPassword, smtpHost)
+
+	to := []string{toEmail}
+
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, s.emailFrom, to, []byte(message))
 }

@@ -2,27 +2,9 @@ package http
 
 import (
 	"net/http"
-	"time"
 
 	"gitlab.com/evzpav/user-auth/internal/domain"
 )
-
-type session struct {
-	un           string
-	lastActivity time.Time
-}
-
-var dbUsers = map[string]domain.User{}
-var dbSessions = map[string]session{}
-var dbSessionsCleaned time.Time
-
-const sessionLength int = 30
-
-func init() {
-	// bs, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.MinCost)
-	// dbUsers["test@test.com"] = user{"test@test.com", bs, "James", "Bond"}
-	dbSessionsCleaned = time.Now()
-}
 
 func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html")
@@ -40,7 +22,7 @@ func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data
 }
 
 func (h *handler) getLogin(w http.ResponseWriter, r *http.Request) {
-	if alreadyLoggedIn(w, r) {
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
@@ -49,7 +31,7 @@ func (h *handler) getLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) getSignup(w http.ResponseWriter, r *http.Request) {
-	if alreadyLoggedIn(w, r) {
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
@@ -64,68 +46,71 @@ func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.authService.Authenticate(r.Context(), authUser)
+	// err := h.authService.Authenticate(r.Context(), authUser)
+	user, err := h.authService.Authenticate2(r.Context(), authUser)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		h.writeTemplate(w, "login", authUser)
 		return
 	}
 
-	c := newCookie(authUser.Token, sessionLength)
+	c := newCookie(user.Token, sessionLength)
 	http.SetCookie(w, c)
 
-	dbSessions[c.Value] = session{authUser.Email, time.Now()}
 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
-	return
-
 }
 
 func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
 	authUser := domain.NewAuthUser(r.FormValue("email"), r.FormValue("password"))
 	if !authUser.Validate() {
+		w.WriteHeader(http.StatusBadRequest)
 		h.writeTemplate(w, "signup", authUser)
 		return
 	}
 
 	if err := h.authService.Signup(r.Context(), authUser); err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusForbidden)
 		h.writeTemplate(w, "signup", authUser)
 		return
 	}
 
 	c := newCookie(authUser.Token, sessionLength)
-
 	http.SetCookie(w, c)
-	dbSessions[c.Value] = session{authUser.Email, time.Now()}
 
-	http.Redirect(w, r, "/profile", http.StatusContinue)
-	return
+	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 
 }
 
 func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
-	if !alreadyLoggedIn(w, r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+	// if !h.alreadyLoggedIn(w, r) {
+	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// 	return
+	// }
+
+	if _, ok := h.alreadyLoggedIn(w, r); !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	c, _ := r.Cookie("session")
 
-	delete(dbSessions, c.Value)
-	c = &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		MaxAge: -1,
+	c, err := r.Cookie(cookieName)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
 	}
-	http.SetCookie(w, c)
 
-	if time.Now().Sub(dbSessionsCleaned) > (time.Second * 30) {
-		go cleanSessions()
-	}
+	delete(h.session, c.Value)
+	//TODO delete token form user
 
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func (h *handler) getProfile(w http.ResponseWriter, r *http.Request) {
+	// user, ok := h.alreadyLoggedIn(w, r)
+	// if !ok {
+	// 	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	// 	return
+	// }
+
 	h.writeTemplate(w, "profile", nil)
 }
 
@@ -142,14 +127,25 @@ func (h *handler) getResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) postResetPassword(w http.ResponseWriter, r *http.Request) {
-	h.writeTemplate(w, "email_sent", nil)
-}
+	authUser := domain.NewAuthUser(r.FormValue("email"), "")
 
-func cleanSessions() {
-	for k, v := range dbSessions {
-		if time.Now().Sub(v.lastActivity) > (time.Second * 30) {
-			delete(dbSessions, k)
-		}
+	if !authUser.ValidateEmail() {
+		w.WriteHeader(http.StatusBadRequest)
+		h.writeTemplate(w, "reset_password", authUser)
+		return
 	}
-	dbSessionsCleaned = time.Now()
+
+	message := "message"
+
+	if err := h.authService.SendEmail(r.Context(), message, authUser.Email); err != nil {
+		errorMsg := "failed to send email"
+		h.log.Error().Err(err).Sendf(errorMsg)
+		authUser.Errors["Credentials"] = errorMsg
+
+		w.WriteHeader(http.StatusBadRequest)
+		h.writeTemplate(w, "reset_password", authUser)
+		return
+	}
+
+	h.writeTemplate(w, "email_sent", nil)
 }

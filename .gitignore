@@ -10,6 +10,7 @@ vendor/
 coverage/
 .history
 user-auth
+.env
 
 # js
 node_modules/
