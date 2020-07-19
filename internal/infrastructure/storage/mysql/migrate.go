@@ -3,9 +3,11 @@ package mysql
 import (
 	"log"
 
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	// _ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
 
-	_ "github.com/golang-migrate/migrate/database/postgres"
+	_ "github.com/golang-migrate/migrate/database/mysql"
 	_ "github.com/golang-migrate/migrate/source/file"
 )
 

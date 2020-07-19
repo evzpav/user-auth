@@ -1,37 +1,40 @@
 package domain
 
+import (
+	"context"
+	"fmt"
+)
+
 type User struct {
-	Name      string `json:"name"`
-	Address   string `json:"address"`
-	Email     string `json:"email"`
-	Password  []byte `json:"password"`
-	Telephone string `json:"telephone"`
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Address  string `json:"address"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Phone    string `json:"phone"`
+	Token    string `json:"token"`
 }
 
-// func (doc *Document) Validate() error {
-// 	if doc.Value == "" {
-// 		return errors.NewInvalidArgument(ErrDocumentValueRequired).
-// 			WithMessage("document value is required")
-// 	}
+func (u *User) Validate() error {
+	if u.Email == "" {
+		return fmt.Errorf("invalid email")
+	}
 
-// 	return nil
-// }
+	if u.Password == "" {
+		return fmt.Errorf("invalid password")
+	}
 
-// type DocumentFilter struct {
-// 	IsBlacklisted bool
-// 	DocType       string
-// }
+	return nil
+}
 
 type UserService interface {
-	// Create(ctx context.Context, user *User) (*User, error)
-	// GetOne(ctx context.Context, ID string) (*User, error)
-	// Update(ctx context.Context, user *User) (*User, error)
-	// Delete(ctx context.Context, ID string) error
+	Create(ctx context.Context, user *User) error
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	Update(ctx context.Context, user *User) error
 }
 
 type UserStorage interface {
-	// Insert(ctx context.Context, user *User) (*User, error)
-	// FindOne(ctx context.Context, ID string) (*User, error)
-	// Set(ctx context.Context, user *User) (*User, error)
-	// Remove(ctx context.Context, ID string) error
+	Insert(ctx context.Context, user *User) error
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	Update(ctx context.Context, user *User) error
 }

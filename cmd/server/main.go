@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"gitlab.com/evzpav/user-auth/internal/domain/auth"
 	"gitlab.com/evzpav/user-auth/internal/domain/template"
 	"gitlab.com/evzpav/user-auth/internal/domain/user"
 	"gitlab.com/evzpav/user-auth/pkg/env"
@@ -41,8 +42,11 @@ func main() {
 		log.Fatal().Err(err).Sendf("failed to connect to mysql: %v", err)
 	}
 
-	defer db.Close()
-
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Sendf("error closing database: %v", err)
+		}
+	}()
 	// if err := mysql.NewMigration(getMySQLURL()).Up(); err != nil {
 	// 	log.Fatal().Sendf("Could not run migrations: %v", err)
 	// }
@@ -59,11 +63,12 @@ func main() {
 
 	// services
 	userService := user.NewService(userStorage)
+	authService := auth.NewService(userService)
 	templateService := template.NewService()
 
 	// HTTP Server
 
-	handler := http.NewHandler(userService, templateService, log)
+	handler := http.NewHandler(userService, authService, templateService, log)
 	server := http.New(handler, getProjectHost(), getProjectPort(), log)
 	server.ListenAndServe()
 

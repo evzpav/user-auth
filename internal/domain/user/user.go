@@ -16,12 +16,22 @@ func NewService(storage domain.UserStorage) *service {
 	}
 }
 
-func (us *service) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
-	// if err := user.Validate(); err != nil {
-	// 	return nil, err
-	// }
+func (us *service) Create(ctx context.Context, user *domain.User) error {
+	if err := user.Validate(); err != nil {
+		return  err
+	}
 
-	// return us.storage.Insert(ctx, user)
+	return us.storage.Insert(ctx, user)
+}
 
-	return nil, nil //TODO REMOVE
+func (us *service) Update(ctx context.Context, user *domain.User) error {
+	if err := user.Validate(); err != nil {
+		return err
+	}
+
+	return us.storage.Update(ctx, user)
+}
+
+func (us *service) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	return us.storage.FindByEmail(ctx, email)
 }

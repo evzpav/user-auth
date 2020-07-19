@@ -11,33 +11,42 @@ import (
 
 type handler struct {
 	userService     domain.UserService
+	authService     domain.AuthService
 	templateService domain.TemplateService
 	log             log.Logger
 }
 
 // NewHandler ...
-func NewHandler(us domain.UserService, ts domain.TemplateService, log log.Logger) http.Handler {
+func NewHandler(userService domain.UserService, authService domain.AuthService, templateService domain.TemplateService, log log.Logger) http.Handler {
 	handler := &handler{
-		userService:     us,
-		templateService: ts,
+		userService:     userService,
+		authService:     authService,
+		templateService: templateService,
 		log:             log,
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/login", handler.getLogin).Methods(http.MethodGet)
-	r.HandleFunc("/login", handler.postLogin).Methods(http.MethodPost)
-	r.HandleFunc("/signup", handler.getSignup).Methods(http.MethodGet)
-	r.HandleFunc("/signup", handler.postSignup).Methods(http.MethodPost)
-	r.HandleFunc("/profile", authorized(handler.getProfile)).Methods(http.MethodGet)
-	r.HandleFunc("/profile", handler.postProfile).Methods(http.MethodPost)
-	r.HandleFunc("/resetpassword", handler.resetPassword).Methods(http.MethodPost)
+	
+	r.HandleFunc("/", redirectToLogin).Methods("GET")
+	r.HandleFunc("/login", handler.getLogin).Methods("GET")
+	r.HandleFunc("/login", handler.postLogin).Methods("POST")
+	r.HandleFunc("/signup", handler.getSignup).Methods("GET")
+	r.HandleFunc("/signup", handler.postSignup).Methods("POST")
+	r.HandleFunc("/profile", authorized(handler.getProfile)).Methods("GET")
+	r.HandleFunc("/profile", handler.postProfile).Methods("POST")
+	r.HandleFunc("/resetpassword", handler.getResetPassword).Methods("GET")
+	r.HandleFunc("/resetpassword", handler.postResetPassword).Methods("POST")
 	r.HandleFunc("/logout", handler.logout)
 
 	return r
 }
 
-func alreadyLoggedIn(w http.ResponseWriter, req *http.Request) bool {
-	c, err := req.Cookie("session")
+func redirectToLogin(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+}
+
+func alreadyLoggedIn(w http.ResponseWriter, r *http.Request) bool {
+	c, err := r.Cookie("session")
 	if err != nil {
 		return false
 	}
@@ -61,3 +70,13 @@ func authorized(h http.HandlerFunc) http.HandlerFunc {
 		h.ServeHTTP(w, r)
 	})
 }
+
+func newCookie(token string, age int) *http.Cookie {
+	c := &http.Cookie{
+		Name:  "session",
+		Value: token,
+	}
+	c.MaxAge = age
+	return c
+}
+

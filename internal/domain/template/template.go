@@ -11,8 +11,6 @@ type service struct {
 	templatesPath string
 }
 
-// var htmlFilesPath = build.Default.GOPATH + "/src/gitlab.com/evzpav/user-auth/internal/domain/template/pages/"
-
 func NewService() *service {
 	return &service{
 		templatesPath: build.Default.GOPATH + "/src/gitlab.com/evzpav/user-auth/internal/domain/template/pages/",
@@ -31,27 +29,3 @@ func (s *service) RetrieveParsedTemplate(name string) (*domain.HTMLTemplate, err
 	}, nil
 
 }
-
-// func (s *service) Login() (*domain.HTMLTemplate, error) {
-// 	tpl := template.Must(template.ParseGlob(htmlFilesPath + "*"))
-// 	pageTpl, err := tpl.ParseFiles(htmlFilesPath+"base.html", htmlFilesPath+"login.html")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &domain.HTMLTemplate{
-// 		Template: pageTpl,
-// 	}, nil
-// }
-
-// func (s *service) Signup() (*domain.HTMLTemplate, error) {
-// 	tpl := template.Must(template.ParseGlob(htmlFilesPath + "*"))
-// 	pageTpl, err := tpl.ParseFiles(htmlFilesPath+"base.html", htmlFilesPath+"signup.html")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &domain.HTMLTemplate{
-// 		Template: pageTpl,
-// 	}, nil
-// }

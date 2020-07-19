@@ -9,6 +9,5 @@ type HTMLTemplate struct {
 }
 
 type TemplateService interface {
-	// Login() (*HTMLTemplate, error)
 	RetrieveParsedTemplate(name string) (*HTMLTemplate, error)
 }
