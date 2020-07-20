@@ -51,8 +51,7 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 	r.HandleFunc("/signup", handler.getSignup).Methods("GET")
 	r.HandleFunc("/signup", handler.postSignup).Methods("POST")
 	r.HandleFunc("/profile", handler.getProfile).Methods("GET")
-	r.HandleFunc("/profile/edit", handler.putProfile).Methods("PUT")
-	// r.HandleFunc("/profile", handler.postProfile).Methods("POST")
+	r.HandleFunc("/profile", handler.postProfile).Methods("POST")
 	r.HandleFunc("/resetpassword", handler.getResetPassword).Methods("GET")
 	r.HandleFunc("/resetpassword", handler.postResetPassword).Methods("POST")
 	r.HandleFunc("/logout", handler.logout)
@@ -87,7 +86,7 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
 	h.cleanExpiredSessions()
-	
+
 	c, err := r.Cookie(cookieName)
 	if err != nil {
 		fmt.Printf("cookie err %v\n", err)

@@ -2,9 +2,15 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"gitlab.com/evzpav/user-auth/internal/domain"
 )
+
+type profile struct {
+	domain.Profile
+	Errors map[string]string
+}
 
 func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html")
@@ -82,21 +88,23 @@ func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
-	if _, ok := h.alreadyLoggedIn(w, r); !ok {
+	user, ok := h.alreadyLoggedIn(w, r)
+	if !ok {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	c, err := r.Cookie(cookieName)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	delete(h.sessions, user.Token)
+
+	user.Token = ""
+
+	if err := h.userService.Update(r.Context(), user); err != nil {
+		h.log.Error().Err(err).Sendf("failed to update user token")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	delete(h.sessions, c.Value)
-	//TODO delete token form user
-
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 }
 
 func (h *handler) getProfile(w http.ResponseWriter, r *http.Request) {
@@ -105,21 +113,66 @@ func (h *handler) getProfile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	type profile struct {
-		*domain.User
-		Errors map[string]string
+
+	prof := profile{
+		Profile: domain.Profile{
+			ID:      user.ID,
+			Email:   user.Email,
+			Address: user.Address,
+			Phone:   user.Phone,
+			Name:    user.Name,
+		},
+		Errors: make(map[string]string),
 	}
-	prof := profile{User: user, Errors: make(map[string]string)}
 
 	h.writeTemplate(w, "profile", prof)
 }
 
-// func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("postprofile"))
-// }
+func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := r.FormValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-func (h *handler) putProfile(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("putprofile"))
+	userProfile := profile{
+		Profile: domain.Profile{
+			ID:      id,
+			Name:    r.FormValue("name"),
+			Email:   r.FormValue("email"),
+			Address: r.FormValue("address"),
+			Phone:   r.FormValue("phone"),
+		},
+		Errors: make(map[string]string),
+	}
+
+	if err := userProfile.Validate(); err != nil {
+		h.log.Error().Err(err).Sendf("invalid user attributes")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.userService.FindByID(ctx, id)
+	if err != nil {
+		h.log.Error().Err(err).Sendf("failed to find user")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	user.Name = userProfile.Name
+	user.Email = userProfile.Email
+	user.Address = userProfile.Address
+	user.Phone = userProfile.Phone
+
+	if err := h.userService.Update(ctx, user); err != nil {
+		h.log.Error().Err(err).Sendf("failed to update user profile")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	h.writeTemplate(w, "profile", userProfile)
 }
 
 func (h *handler) getResetPassword(w http.ResponseWriter, r *http.Request) {

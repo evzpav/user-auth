@@ -16,11 +16,11 @@ type User struct {
 }
 
 func (u *User) Validate() error {
-	if u.Email == "" {
+	if !validateEmail(u.Email) {
 		return fmt.Errorf("invalid email")
 	}
 
-	if u.Password == "" {
+	if len(u.Password) < 5 {
 		return fmt.Errorf("invalid password")
 	}
 

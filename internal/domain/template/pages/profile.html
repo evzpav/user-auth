@@ -2,19 +2,22 @@
 
 <div class="mb-4">
     <h2><a href="/logout" class="underline">Logout</a></h2>
-    <button class="bg-blue-300 hover:bg-blue-dark text-white font-bold py-1 px-2 rounded" type="button" onclick="editProfile()">
+    <button class="bg-green-600 text-white font-bold py-1 px-2 rounded" type="button" onclick="editProfile()">
         Edit
     </button>
 </div>
 
 <h1 class="text-lg font-bold mb-4">PROFILE</h1>
 
-<form method="put" action="/profile" class="mb-4">
+<form method="post" action="/profile" class="mb-4">
+    <input type="hidden" name="id" value="{{.Profile.ID}}">
     <div class="mb-3">
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Email
         </label>
-        <input type="email" name="email" placeholder="email" value="{{.User.Email}}" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="email" name="email" placeholder="email" value="{{.Profile.Email}}" class="profile-input shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <p class="profile-value">{{.Profile.Email}}</p>
+        
         {{ with .Errors }}
         <p class="error">{{ .Email }}</p>
         {{ end }}   
@@ -24,7 +27,8 @@
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Name
         </label>
-        <input type="text" name="name" placeholder="name" value="{{.User.Name}}" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="text" name="name" placeholder="name" value="{{.Profile.Name}}" class="profile-input shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <p class="profile-value">{{.Profile.Name}}</p>
         {{ with .Errors }}
         <p class="error">{{ .Name }}</p>
         {{ end }}   
@@ -34,7 +38,8 @@
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Address
         </label>
-        <input type="text" name="address" placeholder="address" value="{{.User.Address}}" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="text" name="address" placeholder="address" value="{{.Profile.Address}}" class="profile-input shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <p class="profile-value">{{.Profile.Address}}</p>
         {{ with .Errors }}
         <p class="error">{{ .Address }}</p>
         {{ end }}   
@@ -44,7 +49,8 @@
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Phone
         </label>
-        <input type="text" name="phone" placeholder="phone" value="{{.User.Phone}}" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="tel" name="phone" placeholder="123-45-678" pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" value="{{.Profile.Phone}}" class="profile-input appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <p class="profile-value">{{.Profile.Phone}}</p>
         {{ with .Errors }}
         <p class="error">{{ .Phone }}</p>
         {{ end }}   
@@ -56,21 +62,39 @@
     </div>
     {{ end }}
     
-    <button class="bg-blue-600 hover:bg-blue-dark text-white font-bold py-2 px-4 rounded" type="submit">
+    <button id="submit-button" class="bg-blue-600 hover:bg-blue-dark text-white font-bold py-2 px-4 rounded" type="submit" disabled>
         Update
     </button>
 </form>
 <script type="text/javascript">
+
     function editProfile(){
-        alert("edit profuile")
-        document.querySelectorAll(".shadow").forEach(input =>{
+        document.querySelectorAll(".profile-input").forEach(input =>{
             input.style.display = "block";
-        })
+        });
+
+        document.querySelectorAll(".profile-value").forEach(input =>{
+            input.style.display = "none";
+        });
+
+        document.querySelector("#submit-button").removeAttribute("disabled");
     }
 
 </script>
 <style type="text/css">
+    .profile-value {
+        display: block;
+    }
 
+    .profile-input {
+        display: none;
+    }
+
+    #submit-button:disabled{
+        pointer-events: none; 
+        background-color: #edf1f2;
+    }
+    
 
 </style>
 {{end}}

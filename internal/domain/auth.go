@@ -2,11 +2,8 @@ package domain
 
 import (
 	"context"
-	"regexp"
 	"strings"
 )
-
-var rxEmail = regexp.MustCompile(".+@.+\\..+")
 
 type AuthUser struct {
 	Email    string `json:"email"`
@@ -15,23 +12,16 @@ type AuthUser struct {
 	Errors   map[string]string
 }
 
-// type AuthToken struct {
-// 	Token string `json:"token"`
-// 	// Expires      string `json:"expires"`
-// 	// RefreshToken string `json:"refresh_token"`
-// }
-
 func NewAuthUser(email, password string) *AuthUser {
 	return &AuthUser{
 		Email:    email,
 		Password: password,
-		Errors: make(map[string]string),
+		Errors:   make(map[string]string),
 	}
 }
 
 func (au *AuthUser) ValidateEmail() bool {
-	match := rxEmail.Match([]byte(au.Email))
-	if !match {
+	if !validateEmail(au.Email) {
 		au.Errors["Email"] = "Please enter a valid email address"
 	}
 
@@ -41,8 +31,7 @@ func (au *AuthUser) ValidateEmail() bool {
 func (au *AuthUser) Validate() bool {
 	au.Errors = make(map[string]string)
 
-	match := rxEmail.Match([]byte(au.Email))
-	if !match {
+	if !validateEmail(au.Email) {
 		au.Errors["Email"] = "Please enter a valid email address"
 	}
 
