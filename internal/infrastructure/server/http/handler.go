@@ -1,7 +1,9 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"gitlab.com/evzpav/user-auth/internal/domain"
@@ -11,11 +13,23 @@ import (
 const cookieName string = "user_auth_session"
 const sessionLength int = 60
 
+type session struct {
+	*domain.User
+	ExpireTime time.Time
+}
+
+func newSession(user *domain.User) *session {
+	return &session{
+		User:       user,
+		ExpireTime: time.Now().UTC().Add(time.Second * time.Duration(sessionLength)),
+	}
+}
+
 type handler struct {
 	userService     domain.UserService
 	authService     domain.AuthService
 	templateService domain.TemplateService
-	session         map[string]*domain.User
+	sessions        map[string]*session
 	log             log.Logger
 }
 
@@ -25,7 +39,7 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 		userService:     userService,
 		authService:     authService,
 		templateService: templateService,
-		session:         make(map[string]*domain.User),
+		sessions:        make(map[string]*session),
 		log:             log,
 	}
 
@@ -37,7 +51,8 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 	r.HandleFunc("/signup", handler.getSignup).Methods("GET")
 	r.HandleFunc("/signup", handler.postSignup).Methods("POST")
 	r.HandleFunc("/profile", handler.getProfile).Methods("GET")
-	r.HandleFunc("/profile", handler.postProfile).Methods("POST")
+	r.HandleFunc("/profile/edit", handler.putProfile).Methods("PUT")
+	// r.HandleFunc("/profile", handler.postProfile).Methods("POST")
 	r.HandleFunc("/resetpassword", handler.getResetPassword).Methods("GET")
 	r.HandleFunc("/resetpassword", handler.postResetPassword).Methods("POST")
 	r.HandleFunc("/logout", handler.logout)
@@ -71,28 +86,34 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 // }
 
 func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
+	h.cleanExpiredSessions()
+	
 	c, err := r.Cookie(cookieName)
 	if err != nil {
+		fmt.Printf("cookie err %v\n", err)
 		return nil, false
 	}
-
-	if c.MaxAge <= 0 {
-		return nil, false
-	}
+	fmt.Printf("cookie err %v\n", c)
+	// if c.MaxAge <= 0 {
+	// 	fmt.Println("max age err")
+	// 	return nil, false
+	// }
 
 	token := c.Value
 
-	user, ok := h.session[token]
+	session, ok := h.sessions[token]
 	if ok {
-		return user, true
+		c.MaxAge = sessionLength
+		http.SetCookie(w, c)
+		return session.User, true
 	}
 
-	user, err = h.authService.AuthenticateToken(r.Context(), c.Value)
+	user, err := h.authService.AuthenticateToken(r.Context(), c.Value)
 	if err != nil {
 		return nil, false
 	}
 
-	h.session[user.Token] = user
+	h.sessions[user.Token] = newSession(user)
 
 	newCookie := newCookie(user.Token, sessionLength)
 	http.SetCookie(w, newCookie)
@@ -115,10 +136,17 @@ func (h *handler) authorized(hl http.HandlerFunc) http.HandlerFunc {
 }
 
 func newCookie(token string, age int) *http.Cookie {
-	c := &http.Cookie{
-		Name:  cookieName,
-		Value: token,
+	return &http.Cookie{
+		Name:   cookieName,
+		Value:  token,
+		MaxAge: age,
 	}
-	c.MaxAge = age
-	return c
+}
+
+func (h *handler) cleanExpiredSessions() {
+	for k, s := range h.sessions {
+		if time.Now().UTC().After(s.ExpireTime) {
+			delete(h.sessions, k)
+		}
+	}
 }

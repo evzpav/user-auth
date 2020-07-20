@@ -82,11 +82,6 @@ func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
-	// if !h.alreadyLoggedIn(w, r) {
-	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
-	// 	return
-	// }
-
 	if _, ok := h.alreadyLoggedIn(w, r); !ok {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -98,29 +93,34 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	delete(h.session, c.Value)
+	delete(h.sessions, c.Value)
 	//TODO delete token form user
 
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func (h *handler) getProfile(w http.ResponseWriter, r *http.Request) {
-	// user, ok := h.alreadyLoggedIn(w, r)
-	// if !ok {
-	// 	http.Redirect(w, r, "/login", http.StatusSeeOther)
-	// 	return
-	// }
+	user, ok := h.alreadyLoggedIn(w, r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	type profile struct {
+		*domain.User
+		Errors map[string]string
+	}
+	prof := profile{User: user, Errors: make(map[string]string)}
 
-	h.writeTemplate(w, "profile", nil)
+	h.writeTemplate(w, "profile", prof)
 }
 
-func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("postprofile"))
-}
-
-// func (h *handler) putProfile(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("putprofile"))
+// func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
+// 	w.Write([]byte("postprofile"))
 // }
+
+func (h *handler) putProfile(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("putprofile"))
+}
 
 func (h *handler) getResetPassword(w http.ResponseWriter, r *http.Request) {
 	h.writeTemplate(w, "reset_password", nil)
