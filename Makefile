@@ -141,6 +141,8 @@ run-local: build-local ##@dev Run locally.
 	LOGGER_LEVEL=debug \
 	EMAIL_FROM=$(EMAIL_FROM) \
 	EMAIL_PASSWORD=$(EMAIL_PASSWORD) \
+	GOOGLE_KEY=$(GOOGLE_KEY) \
+	GOOGLE_SECRET=$(GOOGLE_SECRET) \
 	MYSQL_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
 	./user-auth
 

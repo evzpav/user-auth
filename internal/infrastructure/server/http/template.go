@@ -1,9 +1,12 @@
 package http
 
 import (
+	"html/template"
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/sessions"
+	"github.com/markbates/goth/gothic"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 )
 
@@ -202,3 +205,40 @@ func (h *handler) postResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	h.writeTemplate(w, "email_sent", nil)
 }
+
+func (h *handler) loginWithThirdParty(w http.ResponseWriter, r *http.Request) {
+	key := "google_cookie"
+	maxAge := 86400 * 30 // 30 days
+	isProd := false      // Set to true when serving over https
+
+	store := sessions.NewCookieStore([]byte(key))
+	store.MaxAge(maxAge)
+	store.Options.Path = "/"
+	store.Options.HttpOnly = true // HttpOnly should always be enabled
+	store.Options.Secure = isProd
+
+	h.authService.GoogleAuthentication(w, r, store)
+}
+
+func (h *handler) loginWithThirdPartyCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := gothic.CompleteUserAuth(w, r)
+	if err != nil {
+		return
+	}
+	t, _ := template.New("foo").Parse(userTemplate)
+	t.Execute(w, user)
+}
+
+var userTemplate = `
+<p><a href="/logout/{{.Provider}}">logout</a></p>
+<p>Name: {{.Name}} [{{.LastName}}, {{.FirstName}}]</p>
+<p>Email: {{.Email}}</p>
+<p>NickName: {{.NickName}}</p>
+<p>Location: {{.Location}}</p>
+<p>AvatarURL: {{.AvatarURL}} <img src="{{.AvatarURL}}"></p>
+<p>Description: {{.Description}}</p>
+<p>UserID: {{.UserID}}</p>
+<p>AccessToken: {{.AccessToken}}</p>
+<p>ExpiresAt: {{.ExpiresAt}}</p>
+<p>RefreshToken: {{.RefreshToken}}</p>
+`

@@ -2,7 +2,10 @@ package domain
 
 import (
 	"context"
+	"net/http"
 	"strings"
+
+	"github.com/gorilla/sessions"
 )
 
 type AuthUser struct {
@@ -50,4 +53,5 @@ type AuthService interface {
 	// AuthenticateToken(ctx context.Context, token string) error
 	AuthenticateToken(ctx context.Context, token string) (*User, error)
 	SendEmail(ctx context.Context, message, to string) error
+	GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore)
 }

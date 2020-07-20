@@ -3,10 +3,15 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/smtp"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/sessions"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/errors"
@@ -17,13 +22,17 @@ type service struct {
 	userService   domain.UserService
 	emailFrom     string
 	emailPassword string
+	googleKey     string
+	googleSecret  string
 }
 
-func NewService(userService domain.UserService, emailFrom, emailPassword string) *service {
+func NewService(userService domain.UserService, emailFrom, emailPassword, googleKey, googleSecret string) *service {
 	return &service{
 		userService:   userService,
 		emailFrom:     emailFrom,
 		emailPassword: emailPassword,
+		googleKey:     googleKey,
+		googleSecret:  googleSecret,
 	}
 }
 
@@ -242,4 +251,20 @@ func (s *service) SendEmail(ctx context.Context, message, toEmail string) error 
 	to := []string{toEmail}
 
 	return smtp.SendMail(smtpHost+":"+smtpPort, auth, s.emailFrom, to, []byte(message))
+}
+
+func (s *service) GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore) {
+	gothic.Store = store
+	goth.UseProviders(
+		google.New(s.googleKey, s.googleSecret, "http://localhost:5001/login/google/callback"),
+	)
+
+	gothUser, err := gothic.CompleteUserAuth(w, r)
+	if err == nil {
+		fmt.Printf("gothUSER: %+v\n", gothUser)
+		return
+	}
+
+	gothic.BeginAuthHandler(w, r)
+
 }

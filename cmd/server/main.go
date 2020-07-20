@@ -22,8 +22,10 @@ const (
 	envVarMySQLURL      = "MYSQL_URL"
 	envVarEmailPassword = "EMAIL_PASSWORD"
 	envVarEmailFrom     = "EMAIL_FROM"
+	envVarGoogleKey     = "GOOGLE_KEY"
+	envVarGoogleSecret  = "GOOGLE_SECRET"
 
-	defaultProjectHost = ""
+	defaultProjectHost = "localhost"
 	defaultProjectPort = "5001"
 	defaultLoggerLevel = "info"
 )
@@ -37,7 +39,7 @@ func main() {
 
 	log.Info().Sendf("use-auth - build:%s; date:%s", build, date)
 
-	env.CheckRequired(log, envVarMySQLURL)
+	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret)
 
 	db, err := mysql.New(getMySQLURL())
 	if err != nil {
@@ -53,10 +55,6 @@ func main() {
 	// 	log.Fatal().Sendf("Could not run migrations: %v", err)
 	// }
 
-	// Check environments
-
-	// ctx := context.Background()
-
 	// storages
 	userStorage, err := mysql.NewUserStorage(db, log)
 	if err != nil {
@@ -65,11 +63,10 @@ func main() {
 
 	// services
 	userService := user.NewService(userStorage)
-	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword())
+	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret())
 	templateService := template.NewService()
 
 	// HTTP Server
-
 	handler := http.NewHandler(userService, authService, templateService, log)
 	server := http.New(handler, getProjectHost(), getProjectPort(), log)
 	server.ListenAndServe()
@@ -103,4 +100,12 @@ func getEmailFrom() string {
 
 func getEmailPassword() string {
 	return env.GetString(envVarEmailPassword)
+}
+
+func getGoogleKey() string {
+	return env.GetString(envVarGoogleKey)
+}
+
+func getGoogleSecret() string {
+	return env.GetString(envVarGoogleSecret)
 }

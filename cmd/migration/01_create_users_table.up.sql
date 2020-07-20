@@ -1,8 +1,0 @@
-CREATE TABLE IF NOT EXISTS users(
-   id INT NOT NULL AUTO_INCREMENT,
-   email VARCHAR(50) NOT NULL,
-   password CHAR(60) NOT NULL,
-   name VARCHAR(50),
-   address VARCHAR(100),
-   phone VARCHAR(30)
-);
