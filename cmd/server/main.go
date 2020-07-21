@@ -18,6 +18,7 @@ import (
 const (
 	envVarHost          = "HOST"
 	envVarPort          = "PORT"
+	envVarPlatformURL   = "PLATFORM_URL"
 	envVarLoggerLevel   = "LOGGER_LEVEL"
 	envVarMySQLURL      = "DATABASE_URL"
 	envVarEmailPassword = "EMAIL_PASSWORD"
@@ -83,7 +84,7 @@ func getProjectPort() string {
 }
 
 func getPlatformURL() string {
-	return getProjectHost() + ":" + getProjectPort()
+	return env.GetString(envVarPlatformURL)
 }
 
 func getLoggerLevel() string {
