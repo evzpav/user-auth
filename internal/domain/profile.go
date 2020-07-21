@@ -1,6 +1,6 @@
 package domain
 
-import "fmt"
+import "errors"
 
 type Profile struct {
 	ID      int    `json:"id"`
@@ -12,12 +12,11 @@ type Profile struct {
 
 func (p *Profile) Validate() error {
 	if p.ID <= 0 {
-		return fmt.Errorf("invalid user ID")
+		return errors.New("invalid user ID")
 	}
 
-	if p.Email == "" {
-		return fmt.Errorf("invalid email")
+	if !validateEmail(p.Email) {
+		return errors.New("invalid email")
 	}
 	return nil
 }
-

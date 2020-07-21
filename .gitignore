@@ -6,7 +6,6 @@
 debug
 debug.test
 public/
-vendor/
 coverage/
 .history
 user-auth

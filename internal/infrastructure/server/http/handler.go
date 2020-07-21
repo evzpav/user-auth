@@ -46,16 +46,18 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 
 	r.HandleFunc("/", redirectToLogin).Methods("GET")
 	r.HandleFunc("/login", handler.getLogin).Methods("GET")
+	r.HandleFunc("/login", handler.postLogin).Methods("POST")
 	r.HandleFunc("/login/{provider}", handler.loginWithThirdParty).Methods("GET")
 	r.HandleFunc("/login/{provider}/callback", handler.loginWithThirdPartyCallback).Methods("GET")
-	r.HandleFunc("/login", handler.postLogin).Methods("POST")
 	r.HandleFunc("/signup", handler.getSignup).Methods("GET")
 	r.HandleFunc("/signup", handler.postSignup).Methods("POST")
-	r.HandleFunc("/profile", handler.getProfile).Methods("GET")
+	r.HandleFunc("/logout", handler.logout).Methods("GET")
+	r.HandleFunc("/password/forgot", handler.getForgotPassword).Methods("GET")
+	r.HandleFunc("/password/forgot", handler.postForgotPassword).Methods("POST")
+	r.HandleFunc("/password/new", handler.postNewPassword).Methods("POST")
+	r.HandleFunc("/password/new/{token}", handler.getNewPassword).Methods("GET")
 	r.HandleFunc("/profile", handler.postProfile).Methods("POST")
-	r.HandleFunc("/resetpassword", handler.getResetPassword).Methods("GET")
-	r.HandleFunc("/resetpassword", handler.postResetPassword).Methods("POST")
-	r.HandleFunc("/logout", handler.logout)
+	r.HandleFunc("/profile", handler.getProfile).Methods("GET")
 
 	return r
 }

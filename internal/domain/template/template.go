@@ -1,19 +1,30 @@
 package template
 
 import (
-	"go/build"
 	"html/template"
 
+	"os"
+
 	"gitlab.com/evzpav/user-auth/internal/domain"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 type service struct {
 	templatesPath string
+	log           log.Logger
 }
 
-func NewService() *service {
+func NewService(log log.Logger) *service {
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+
+	templatesPath := pwd + "/internal/domain/template/pages/"
+
 	return &service{
-		templatesPath: build.Default.GOPATH + "/src/gitlab.com/evzpav/user-auth/internal/domain/template/pages/",
+		templatesPath: templatesPath,
+		log:           log,
 	}
 }
 

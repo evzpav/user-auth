@@ -4,15 +4,18 @@ import (
 	"context"
 
 	"gitlab.com/evzpav/user-auth/internal/domain"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 type service struct {
 	storage domain.UserStorage
+	log     log.Logger
 }
 
-func NewService(storage domain.UserStorage) *service {
+func NewService(storage domain.UserStorage, log log.Logger) *service {
 	return &service{
 		storage: storage,
+		log:     log,
 	}
 }
 

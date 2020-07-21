@@ -3,11 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
+
 	"net/http"
 	"net/smtp"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
@@ -15,6 +14,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/errors"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,15 +24,19 @@ type service struct {
 	emailPassword string
 	googleKey     string
 	googleSecret  string
+	platformURL   string
+	log           log.Logger
 }
 
-func NewService(userService domain.UserService, emailFrom, emailPassword, googleKey, googleSecret string) *service {
+func NewService(userService domain.UserService, emailFrom, emailPassword, googleKey, googleSecret, platformURL string, log log.Logger) *service {
 	return &service{
 		userService:   userService,
 		emailFrom:     emailFrom,
 		emailPassword: emailPassword,
 		googleKey:     googleKey,
 		googleSecret:  googleSecret,
+		platformURL:   platformURL,
+		log:           log,
 	}
 }
 
@@ -208,38 +212,41 @@ func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.
 // 	return user, nil
 // }
 
-func (s *service) GenerateJWTToken(u *domain.User) (string, error) {
-	expire := time.Now().Add(time.Hour * 1)
+// func (s *service) GenerateJWTToken(u *domain.User) (string, error) {
+// 	expire := time.Now().Add(time.Hour * 1)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  u.ID,
-		"e":   u.Email,
-		"a":   u.Address,
-		"p":   u.Phone,
-		"exp": expire.Unix(),
-	})
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+// 		"id":  u.ID,
+// 		"e":   u.Email,
+// 		"a":   u.Address,
+// 		"p":   u.Phone,
+// 		"exp": expire.Unix(),
+// 	})
 
-	tokenString, err := token.SignedString("key") //TODOD ADD VAR
+// 	tokenString, err := token.SignedString("key") //TODOD ADD VAR
 
-	return tokenString, err
-}
+// 	return tokenString, err
+// }
 
-func (s *service) ParseToken(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if jwt.SigningMethodHS256 != token.Method {
-			return nil, fmt.Errorf("wrong signing method")
-		}
-		return "key", nil
-	})
+// func (s *service) ParseToken(token string) (*jwt.Token, error) {
+// 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+// 		if jwt.SigningMethodHS256 != token.Method {
+// 			return nil, fmt.Errorf("wrong signing method")
+// 		}
+// 		return "key", nil
+// 	})
 
-}
+// }
 
-func (s *service) validateToken(token string) (map[string]interface{}, bool) {
-	jwtToken, err := s.ParseToken(token)
-	if err != nil || !jwtToken.Valid {
-		return nil, false
-	}
-	return jwtToken.Claims.(jwt.MapClaims), true
+// func (s *service) validateToken(token string) (map[string]interface{}, bool) {
+// 	jwtToken, err := s.ParseToken(token)
+// 	if err != nil || !jwtToken.Valid {
+// 		return nil, false
+// 	}
+// 	return jwtToken.Claims.(jwt.MapClaims), true
+// }
+func (s *service) GenerateResetPasswordLink() string {
+	return fmt.Sprintf("%s/password", s.platformURL)
 }
 
 func (s *service) SendEmail(ctx context.Context, message, toEmail string) error {

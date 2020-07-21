@@ -62,9 +62,9 @@ func main() {
 	}
 
 	// services
-	userService := user.NewService(userStorage)
-	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret())
-	templateService := template.NewService()
+	userService := user.NewService(userStorage, log)
+	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret(), getPlatformURL(), log)
+	templateService := template.NewService(log)
 
 	// HTTP Server
 	handler := http.NewHandler(userService, authService, templateService, log)
@@ -84,6 +84,10 @@ func getProjectHost() string {
 
 func getProjectPort() string {
 	return env.GetString(envVarPort, defaultProjectPort)
+}
+
+func getPlatformURL() string {
+	return getProjectHost() + ":" + getProjectPort()
 }
 
 func getLoggerLevel() string {

@@ -178,11 +178,11 @@ func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
 	h.writeTemplate(w, "profile", userProfile)
 }
 
-func (h *handler) getResetPassword(w http.ResponseWriter, r *http.Request) {
-	h.writeTemplate(w, "reset_password", nil)
+func (h *handler) getForgotPassword(w http.ResponseWriter, r *http.Request) {
+	h.writeTemplate(w, "forgot_password", nil)
 }
 
-func (h *handler) postResetPassword(w http.ResponseWriter, r *http.Request) {
+func (h *handler) postForgotPassword(w http.ResponseWriter, r *http.Request) {
 	authUser := domain.NewAuthUser(r.FormValue("email"), "")
 
 	if !authUser.ValidateEmail() {
@@ -199,11 +199,29 @@ func (h *handler) postResetPassword(w http.ResponseWriter, r *http.Request) {
 		authUser.Errors["Credentials"] = errorMsg
 
 		w.WriteHeader(http.StatusBadRequest)
-		h.writeTemplate(w, "reset_password", authUser)
+		h.writeTemplate(w, "forgot_password", authUser)
 		return
 	}
 
 	h.writeTemplate(w, "email_sent", nil)
+}
+
+func (h *handler) getNewPassword(w http.ResponseWriter, r *http.Request) {
+	// vars := mux.Vars(r)
+	// _, ok := vars["token"]
+	// if ok {
+	// 	// user, err := h.userService.FindByToken(r.Context(), token)
+	// 	// if err != nil {
+
+	// 	// }
+
+	// }
+
+	h.writeTemplate(w, "new_password", nil)
+}
+
+func (h *handler) postNewPassword(w http.ResponseWriter, r *http.Request) {
+	h.writeTemplate(w, "new_password", nil)
 }
 
 func (h *handler) loginWithThirdParty(w http.ResponseWriter, r *http.Request) {
