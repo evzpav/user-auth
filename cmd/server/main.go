@@ -19,7 +19,7 @@ const (
 	envVarHost          = "HOST"
 	envVarPort          = "PORT"
 	envVarLoggerLevel   = "LOGGER_LEVEL"
-	envVarMySQLURL      = "MYSQL_URL"
+	envVarMySQLURL      = "DATABASE_URL"
 	envVarEmailPassword = "EMAIL_PASSWORD"
 	envVarEmailFrom     = "EMAIL_FROM"
 	envVarGoogleKey     = "GOOGLE_KEY"

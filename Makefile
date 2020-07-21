@@ -69,7 +69,7 @@ run-local: build-local ##@dev Run locally.
 	EMAIL_PASSWORD=$(EMAIL_PASSWORD) \
 	GOOGLE_KEY=$(GOOGLE_KEY) \
 	GOOGLE_SECRET=$(GOOGLE_SECRET) \
-	MYSQL_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
+	DATABASE_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
 	./user-auth
 
 target: 
@@ -96,5 +96,5 @@ run-docker: build ##@docker Run docker container.
 		-e EMAIL_PASSWORD=$(EMAIL_PASSWORD) \
 		-e GOOGLE_KEY=$(GOOGLE_KEY) \
 		-e GOOGLE_SECRET=$(GOOGLE_SECRET) \
-		-e MYSQL_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
+		-e DATABASE_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
 		$(IMAGE)
