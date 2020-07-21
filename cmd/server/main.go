@@ -39,7 +39,7 @@ func main() {
 
 	log.Info().Sendf("use-auth - build:%s; date:%s", build, date)
 
-	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret)
+	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret, envVarPlatformURL)
 
 	db, err := mysql.New(getMySQLURL())
 	if err != nil {

@@ -57,37 +57,37 @@ func (s *service) GenerateToken() string {
 	return sID.String()
 }
 
-func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) error {
-	u, err := s.userService.FindByEmail(ctx, authUser.Email)
-	if err != nil {
-		authUser.Errors["Credentials"] = "invalid credentials"
-		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	}
+// func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) error {
+// 	u, err := s.userService.FindByEmail(ctx, authUser.Email)
+// 	if err != nil {
+// 		authUser.Errors["Credentials"] = "invalid credentials"
+// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
 
-	if u == nil {
-		authUser.Errors["Credentials"] = "invalid credentials"
-		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	}
+// 	if u == nil {
+// 		authUser.Errors["Credentials"] = "invalid credentials"
+// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
 
-	if !s.hashMatchesPassword(u.Password, authUser.Password) {
-		authUser.Errors["Credentials"] = "invalid credentials"
-		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	}
+// 	if !s.hashMatchesPassword(u.Password, authUser.Password) {
+// 		authUser.Errors["Credentials"] = "invalid credentials"
+// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	}
 
-	token := s.GenerateToken()
-	authUser.Token = token
-	u.Token = token
+// 	token := s.GenerateToken()
+// 	authUser.Token = token
+// 	u.Token = token
 
-	// u.Token, err = s.GenerateJWTToken(u)
-	// if err != nil {
-	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	// }
+// 	// u.Token, err = s.GenerateJWTToken(u)
+// 	// if err != nil {
+// 	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
+// 	// }
 
-	return s.userService.Update(ctx, u)
+// 	return s.userService.Update(ctx, u)
 
-}
+// }
 
-func (s *service) Authenticate2(ctx context.Context, authUser *domain.AuthUser) (*domain.User, error) {
+func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) (*domain.User, error) {
 	user, err := s.userService.FindByEmail(ctx, authUser.Email)
 	if err != nil {
 		authUser.Errors["Credentials"] = "invalid credentials"

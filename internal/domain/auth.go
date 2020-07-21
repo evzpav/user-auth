@@ -51,8 +51,7 @@ func (au *AuthUser) Validate() bool {
 
 type AuthService interface {
 	Signup(ctx context.Context, authUser *AuthUser) error
-	Authenticate(ctx context.Context, authUser *AuthUser) error
-	Authenticate2(ctx context.Context, authUser *AuthUser) (*User, error)
+	Authenticate(ctx context.Context, authUser *AuthUser) (*User, error)
 	Me(ctx context.Context) (*User, error)
 	AuthenticateToken(ctx context.Context, token string) (*User, error)
 	GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore)

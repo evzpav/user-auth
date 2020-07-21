@@ -77,19 +77,19 @@ func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*doma
 
 	token := c.Value
 
-	session, ok := h.sessions[token]
-	if ok {
-		c.MaxAge = sessionLength
-		http.SetCookie(w, c)
-		return session.User, true
-	}
+	// session, ok := h.sessions[token]
+	// if ok {
+	// 	c.MaxAge = sessionLength
+	// 	http.SetCookie(w, c)
+	// 	return session.User, true
+	// }
 
-	user, err := h.authService.AuthenticateToken(r.Context(), c.Value)
+	user, err := h.authService.AuthenticateToken(r.Context(), token)
 	if err != nil {
 		return nil, false
 	}
 
-	h.sessions[user.Token] = newSession(user)
+	// h.sessions[user.Token] = newSession(user)
 
 	newCookie := newCookie(user.Token, sessionLength)
 	http.SetCookie(w, newCookie)

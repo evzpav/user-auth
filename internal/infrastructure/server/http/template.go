@@ -18,6 +18,9 @@ type profile struct {
 
 func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 	loginTpl, err := h.templateService.RetrieveParsedTemplate(templateName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -56,8 +59,7 @@ func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err := h.authService.Authenticate(r.Context(), authUser)
-	user, err := h.authService.Authenticate2(r.Context(), authUser)
+	user, err := h.authService.Authenticate(r.Context(), authUser)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		h.writeTemplate(w, "login", authUser)
@@ -107,7 +109,7 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userService.Update(r.Context(), user); err != nil {
 		h.log.Error().Err(err).Sendf("failed to update user token")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
