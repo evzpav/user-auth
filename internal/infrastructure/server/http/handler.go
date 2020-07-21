@@ -43,6 +43,7 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 	}
 
 	r := mux.NewRouter()
+	r.Use(handler.logger())
 
 	r.HandleFunc("/", redirectToLogin).Methods("GET")
 	r.HandleFunc("/login", handler.getLogin).Methods("GET")
@@ -54,8 +55,8 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 	r.HandleFunc("/logout", handler.logout).Methods("GET")
 	r.HandleFunc("/password/forgot", handler.getForgotPassword).Methods("GET")
 	r.HandleFunc("/password/forgot", handler.postForgotPassword).Methods("POST")
+	r.HandleFunc("/password/new", handler.getNewPassword).Methods("GET")
 	r.HandleFunc("/password/new", handler.postNewPassword).Methods("POST")
-	r.HandleFunc("/password/new/{token}", handler.getNewPassword).Methods("GET")
 	r.HandleFunc("/profile", handler.postProfile).Methods("POST")
 	r.HandleFunc("/profile", handler.getProfile).Methods("GET")
 

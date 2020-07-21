@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS users(
    name VARCHAR(50),
    address VARCHAR(100),
    phone VARCHAR(30),
-   token CHAR(100)
+   token CHAR(100),
+   recovery_token CHAR(100)
 );

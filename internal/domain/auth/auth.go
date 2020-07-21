@@ -52,7 +52,7 @@ func (s *service) hashMatchesPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
-func (s *service) generateToken() string {
+func (s *service) GenerateToken() string {
 	sID := uuid.NewV4()
 	return sID.String()
 }
@@ -74,7 +74,7 @@ func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) e
 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	}
 
-	token := s.generateToken()
+	token := s.GenerateToken()
 	authUser.Token = token
 	u.Token = token
 
@@ -104,7 +104,7 @@ func (s *service) Authenticate2(ctx context.Context, authUser *domain.AuthUser) 
 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	}
 
-	token := s.generateToken()
+	token := s.GenerateToken()
 	authUser.Token = token
 	user.Token = token
 
@@ -154,102 +154,16 @@ func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.
 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	}
 
-	// claims, ok := s.validateToken(token)
-	// if !ok {
-	// 	return fmt.Errorf("invalid token")
-	// }
-
-	// id := claims["id"].(int)
-
-	// user, err := s.userService.FindByID(ctx, id)
-	// if err != nil {
-	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	// }
-
-	// if user == nil {
-	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	// }
-
-	// jwtToken, err := s.GenerateJWTToken(user)
-	// if err != nil {
-	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-	// }
-
-	user.Token = s.generateToken()
+	user.Token = s.GenerateToken()
 
 	return user, s.userService.Update(ctx, user)
 }
 
-// func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
-
-// 	claims, ok := s.validateToken(token)
-// 	if !ok {
-// 		return nil, fmt.Errorf("invalid token")
-// 	}
-
-// 	id := claims["id"].(int)
-
-// 	user, err := s.userService.FindByID(ctx, id)
-// 	if err != nil {
-// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	if user == nil {
-// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	jwtToken, err := s.GenerateJWTToken(user)
-// 	if err != nil {
-// 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	user.Token = jwtToken
-
-// 	if err := s.userService.Update(ctx, user); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return user, nil
-// }
-
-// func (s *service) GenerateJWTToken(u *domain.User) (string, error) {
-// 	expire := time.Now().Add(time.Hour * 1)
-
-// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-// 		"id":  u.ID,
-// 		"e":   u.Email,
-// 		"a":   u.Address,
-// 		"p":   u.Phone,
-// 		"exp": expire.Unix(),
-// 	})
-
-// 	tokenString, err := token.SignedString("key") //TODOD ADD VAR
-
-// 	return tokenString, err
-// }
-
-// func (s *service) ParseToken(token string) (*jwt.Token, error) {
-// 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-// 		if jwt.SigningMethodHS256 != token.Method {
-// 			return nil, fmt.Errorf("wrong signing method")
-// 		}
-// 		return "key", nil
-// 	})
-
-// }
-
-// func (s *service) validateToken(token string) (map[string]interface{}, bool) {
-// 	jwtToken, err := s.ParseToken(token)
-// 	if err != nil || !jwtToken.Valid {
-// 		return nil, false
-// 	}
-// 	return jwtToken.Claims.(jwt.MapClaims), true
-// }
-func (s *service) GenerateResetPasswordLink() string {
-	return fmt.Sprintf("%s/password", s.platformURL)
+func (s *service) generateResetPasswordLink(token string) string {
+	return fmt.Sprintf("%s/password/new?token=%s", s.platformURL, token)
 }
 
-func (s *service) SendEmail(ctx context.Context, message, toEmail string) error {
+func (s *service) sendEmail(ctx context.Context, message []byte, toEmail string) error {
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
@@ -257,13 +171,15 @@ func (s *service) SendEmail(ctx context.Context, message, toEmail string) error 
 
 	to := []string{toEmail}
 
-	return smtp.SendMail(smtpHost+":"+smtpPort, auth, s.emailFrom, to, []byte(message))
+	s.log.Debug().Sendf("Sending email with message: %s", message)
+
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, s.emailFrom, to, message)
 }
 
 func (s *service) GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore) {
 	gothic.Store = store
 	goth.UseProviders(
-		google.New(s.googleKey, s.googleSecret, "http://localhost:5001/login/google/callback"),
+		google.New(s.googleKey, s.googleSecret, s.platformURL+"/login/google/callback"),
 	)
 
 	gothUser, err := gothic.CompleteUserAuth(w, r)
@@ -274,4 +190,53 @@ func (s *service) GoogleAuthentication(w http.ResponseWriter, r *http.Request, s
 
 	gothic.BeginAuthHandler(w, r)
 
+}
+
+func (s *service) SetNewPassword(ctx context.Context, user *domain.User, password string) error {
+	hashedPassword, err := s.hashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	user.Password = hashedPassword
+	user.RecoveryToken = ""
+
+	return s.userService.Update(ctx, user)
+
+}
+
+func (s *service) SetUserRecoveryToken(ctx context.Context, email string) (string, error) {
+
+	user, err := s.userService.FindByEmail(ctx, email)
+	if err != nil {
+		return "", err
+	}
+
+	if user == nil {
+		return "", fmt.Errorf("invalid user")
+	}
+
+	user.RecoveryToken = s.GenerateToken()
+
+	if err := s.userService.Update(ctx, user); err != nil {
+		return "", err
+	}
+
+	return user.RecoveryToken, nil
+
+}
+
+func (s *service) SendResetPasswordLink(ctx context.Context, authUser *domain.AuthUser) {
+	link := s.generateResetPasswordLink(authUser.RecoveryToken)
+
+	msg := []byte("To: " + authUser.Email + "\r\n" +
+		"Subject: Recover password - user-auth\r\n" +
+		"\r\n" +
+		"Reset password link. Copy it and paste it in the browser: \n" + link + "\r\n")
+
+	if err := s.sendEmail(ctx, msg, authUser.Email); err != nil {
+		s.log.Error().Err(err).Sendf("failed to send email")
+		return
+	}
+	s.log.Info().Sendf("sent reset password link to %s", authUser.Email)
 }

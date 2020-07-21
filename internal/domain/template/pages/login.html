@@ -7,7 +7,7 @@
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Email
         </label>
-        <input type="email" name="email" placeholder="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="email" name="email" placeholder="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight" required>
         {{ with .Errors }}
         <p class="error">{{ .Email }}</p>
         {{ end }}   
@@ -18,7 +18,7 @@
             Password
         </label>
     
-        <input type="password" name="password" placeholder="password"  minlength="5" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker">
+        <input type="password" name="password" placeholder="password"  minlength="5" class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker" required>
         {{ with .Errors }}
         <p class="error">{{ .Password }}</p>
         {{ end }}

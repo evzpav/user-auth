@@ -44,11 +44,8 @@ run-mysql: build-mysql  ##@mysql run mysql on docker
 		-e MYSQL_ROOT_PASSWORD=$(MYSQL_PASSWORD) \
 		mysql_$(NAME):$(VERSION)
 
-env-ip: ##@environment Return local MongoDB IP (from Docker container)
-	@echo $$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(MYSQL_NAME))
-
-env-stop: ##@environment Remove mongo container and remove network.
-	-docker rm -vf $(MYSQL_NAME)
+env-stop: ##@environment Remove mysql container.
+	-docker rm -vf mysql_$(NAME)
 
 build-local: ##@dev Build binary locally
 	-rm ./user-auth
@@ -89,7 +86,7 @@ run-docker: build ##@docker Run docker container.
 	docker run --rm \
 		--name $(NAME) \
 		--network=host \
-		-e HOST=localhost \
+		-e HOST=http://localhost \
 		-e PORT=8080 \
 		-e LOGGER_LEVEL=debug \
 		-e EMAIL_FROM=$(EMAIL_FROM) \

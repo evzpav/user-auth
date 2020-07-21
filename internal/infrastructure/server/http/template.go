@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
@@ -99,6 +100,9 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 
 	delete(h.sessions, user.Token)
 
+	c := newCookie("", -1)
+	http.SetCookie(w, c)
+
 	user.Token = ""
 
 	if err := h.userService.Update(r.Context(), user); err != nil {
@@ -183,45 +187,97 @@ func (h *handler) getForgotPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) postForgotPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	authUser := domain.NewAuthUser(r.FormValue("email"), "")
 
 	if !authUser.ValidateEmail() {
-		w.WriteHeader(http.StatusBadRequest)
-		h.writeTemplate(w, "reset_password", authUser)
-		return
-	}
-
-	message := "message"
-
-	if err := h.authService.SendEmail(r.Context(), message, authUser.Email); err != nil {
-		errorMsg := "failed to send email"
-		h.log.Error().Err(err).Sendf(errorMsg)
-		authUser.Errors["Credentials"] = errorMsg
-
 		w.WriteHeader(http.StatusBadRequest)
 		h.writeTemplate(w, "forgot_password", authUser)
 		return
 	}
 
+	token, err := h.authService.SetUserRecoveryToken(ctx, authUser.Email)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		h.writeTemplate(w, "email_sent", nil) // to avoid bruteforce
+		return
+	}
+
+	authUser.RecoveryToken = token
+
+	go h.authService.SendResetPasswordLink(ctx, authUser)
+
 	h.writeTemplate(w, "email_sent", nil)
 }
 
+type replyMessage struct {
+	Errors  map[string]string
+	Message string
+}
+
 func (h *handler) getNewPassword(w http.ResponseWriter, r *http.Request) {
-	// vars := mux.Vars(r)
-	// _, ok := vars["token"]
-	// if ok {
-	// 	// user, err := h.userService.FindByToken(r.Context(), token)
-	// 	// if err != nil {
+	var reply replyMessage
+	reply.Errors = make(map[string]string)
 
-	// 	// }
+	urlValues := r.URL.Query()
+	_, ok := urlValues["token"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		reply.Errors["Link"] = "invalid link"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
 
-	// }
+	h.writeTemplate(w, "new_password", reply)
 
-	h.writeTemplate(w, "new_password", nil)
 }
 
 func (h *handler) postNewPassword(w http.ResponseWriter, r *http.Request) {
-	h.writeTemplate(w, "new_password", nil)
+	ctx := r.Context()
+	var reply replyMessage
+	reply.Errors = make(map[string]string)
+
+	authUser := domain.NewAuthUser("", r.FormValue("password"))
+	if !authUser.ValidatePassword() {
+		reply.Errors["Link"] = "invalid password"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
+
+	token := r.FormValue("token")
+	if strings.TrimSpace(token) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		reply.Errors["Link"] = "invalid link"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
+
+	user, err := h.userService.FindByRecoveryToken(ctx, token)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		reply.Errors["Link"] = "invalid link"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
+
+	if user == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		reply.Errors["Link"] = "invalid link"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
+
+	if err := h.authService.SetNewPassword(ctx, user, authUser.Password); err != nil {
+		h.log.Error().Err(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		reply.Errors["Link"] = "failed to change password"
+		h.writeTemplate(w, "new_password", reply)
+		return
+	}
+
+	reply.Errors = nil
+	reply.Message = "password changed"
+	h.writeTemplate(w, "new_password", reply)
 }
 
 func (h *handler) loginWithThirdParty(w http.ResponseWriter, r *http.Request) {

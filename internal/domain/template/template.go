@@ -32,6 +32,7 @@ func (s *service) RetrieveParsedTemplate(name string) (*domain.HTMLTemplate, err
 	tpl := template.Must(template.ParseGlob(s.templatesPath + "*"))
 	pageTpl, err := tpl.ParseFiles(s.templatesPath+"base.html", s.templatesPath+name+".html")
 	if err != nil {
+		s.log.Debug().Err(err)
 		return nil, err
 	}
 

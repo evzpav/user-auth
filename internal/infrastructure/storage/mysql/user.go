@@ -34,29 +34,6 @@ func (us *userStorage) Insert(ctx context.Context, inputUser *domain.User) error
 	return us.db.Create(&inputUser).Error
 }
 
-// func (us *userStorage) FindOne(ctx context.Context, filter domain.User) (*domain.User, error) {
-
-// 	var user domain.User
-
-// 	if filter.Email != "" {
-// 		return us.FindByEmail(ctx, filter.Email)
-// 	}
-
-// 	if filter.Token != "" {
-// 		return us.FindByToken(ctx, fi)
-// 	}
-
-// 	if err := us.db.Where(`users.email=(?)`, filter.Email).Find(&user).Error; err != nil {
-// 		if gorm.IsRecordNotFoundError(err) {
-// 			return nil, nil
-// 		}
-
-// 		return nil, err
-// 	}
-
-// 	return &user, nil
-// }
-
 func (us *userStorage) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
 	if err := us.db.Where(`users.email=(?)`, email).Find(&user).Error; err != nil {
@@ -73,6 +50,19 @@ func (us *userStorage) FindByEmail(ctx context.Context, email string) (*domain.U
 func (us *userStorage) FindByToken(ctx context.Context, token string) (*domain.User, error) {
 	var user domain.User
 	if err := us.db.Where(`users.token=(?)`, token).Find(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (us *userStorage) FindByRecoveryToken(ctx context.Context, token string) (*domain.User, error) {
+	var user domain.User
+	if err := us.db.Where(`users.recovery_token=(?)`, token).Find(&user).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}

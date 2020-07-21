@@ -25,7 +25,6 @@ const (
 	envVarGoogleKey     = "GOOGLE_KEY"
 	envVarGoogleSecret  = "GOOGLE_SECRET"
 
-	defaultProjectHost = "localhost"
 	defaultProjectPort = "5001"
 	defaultLoggerLevel = "info"
 )
@@ -51,9 +50,6 @@ func main() {
 			log.Error().Err(err).Sendf("error closing database: %v", err)
 		}
 	}()
-	// if err := mysql.NewMigration(getMySQLURL()).Up(); err != nil {
-	// 	log.Fatal().Sendf("Could not run migrations: %v", err)
-	// }
 
 	// storages
 	userStorage, err := mysql.NewUserStorage(db, log)
@@ -79,7 +75,7 @@ func main() {
 }
 
 func getProjectHost() string {
-	return env.GetString(envVarHost, defaultProjectHost)
+	return env.GetString(envVarHost)
 }
 
 func getProjectPort() string {
