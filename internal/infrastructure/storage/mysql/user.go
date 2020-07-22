@@ -73,6 +73,19 @@ func (us *userStorage) FindByRecoveryToken(ctx context.Context, token string) (*
 	return &user, nil
 }
 
+func (us *userStorage) FindByGoogleID(ctx context.Context, token string) (*domain.User, error) {
+	var user domain.User
+	if err := us.db.Where(`users.google_id=(?)`, token).Find(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (us *userStorage) FindByID(ctx context.Context, ID int) (*domain.User, error) {
 	var user domain.User
 	if err := us.db.Where(`users.id=(?)`, ID).Find(&user).Error; err != nil {

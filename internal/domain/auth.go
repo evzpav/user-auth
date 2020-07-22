@@ -10,6 +10,8 @@ type AuthUser struct {
 	Password      string `json:"password"`
 	Token         string `json:"token"`
 	RecoveryToken string `json:"recovery_token"`
+	Name          string `json:"name"`
+	GoogleID      string `json:"google_id"`
 	Errors        map[string]string
 }
 
@@ -58,4 +60,5 @@ type AuthService interface {
 	//Google
 	GetGoogleSigninLink(state string) string
 	GetGoogleProfile(code string) (*GoogleUser, error)
+	SignupWithGoogle(ctx context.Context, authUser *AuthUser) error
 }

@@ -112,6 +112,40 @@ func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
 	return s.userService.Create(ctx, user)
 }
 
+func (s *service) SignupWithGoogle(ctx context.Context, authUser *domain.AuthUser) error {
+	existingUser, err := s.userService.FindByEmail(ctx, authUser.Email)
+	if err != nil {
+		return err
+	}
+
+	if existingUser != nil {
+		return nil
+	}
+
+	hashedPassword, err := s.hashPassword(authUser.Password)
+	if err != nil {
+		return err
+	}
+
+	user := &domain.User{
+		Email:    authUser.Email,
+		Password: hashedPassword,
+	}
+
+	if authUser.Token != "" {
+		user.Token = authUser.Token
+	}
+
+	if authUser.Name != "" {
+		user.Name = authUser.Name
+	}
+
+	if authUser.GoogleID != "" {
+		user.GoogleID = authUser.GoogleID
+	}
+
+	return s.userService.Create(ctx, user)
+}
 
 func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
 	user, err := s.userService.FindByToken(ctx, token)

@@ -10,5 +10,6 @@ CREATE TABLE IF NOT EXISTS users(
    address VARCHAR(100),
    phone VARCHAR(30),
    token CHAR(100),
-   recovery_token CHAR(100)
+   recovery_token CHAR(100),
+   google_id VARCHAR(50)
 );

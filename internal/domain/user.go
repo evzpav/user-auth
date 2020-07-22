@@ -14,6 +14,7 @@ type User struct {
 	Phone         string `json:"phone"`
 	Token         string `json:"token"`
 	RecoveryToken string `json:"recovery_token"`
+	GoogleID      string `json:"google_id"`
 }
 
 func (u *User) Validate() error {
@@ -33,6 +34,7 @@ type UserService interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByToken(ctx context.Context, token string) (*User, error)
 	FindByRecoveryToken(ctx context.Context, token string) (*User, error)
+	FindByGoogleID(ctx context.Context, token string) (*User, error)
 	FindByID(ctx context.Context, ID int) (*User, error)
 	Update(ctx context.Context, user *User) error
 }
@@ -42,6 +44,7 @@ type UserStorage interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByToken(ctx context.Context, token string) (*User, error)
 	FindByRecoveryToken(ctx context.Context, token string) (*User, error)
+	FindByGoogleID(ctx context.Context, token string) (*User, error)
 	FindByID(ctx context.Context, ID int) (*User, error)
 	Update(ctx context.Context, user *User) error
 }

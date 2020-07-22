@@ -15,6 +15,12 @@ const googleSession string = "google_session"
 const googleCookie string = "google_cookie"
 const sessionLength int = 86400 * 7 // 1 week in seconds
 
+type profile struct {
+	domain.Profile
+	Errors  map[string]string
+	Message string
+}
+
 type handler struct {
 	userService     domain.UserService
 	authService     domain.AuthService
@@ -81,12 +87,47 @@ func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*doma
 	return user, true
 }
 
-func (h *handler) authorized(hl http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := h.alreadyLoggedIn(w, r); !ok {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-		hl.ServeHTTP(w, r)
-	})
+func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data interface{}) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+
+	loginTpl, err := h.templateService.RetrieveParsedTemplate(templateName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := loginTpl.Template.Execute(w, data); err != nil {
+		h.log.Error().Sendf("Failed to execute template: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
+
+func (h *handler) getSessionAndSetCookie(w http.ResponseWriter, r *http.Request, token string) error {
+	session, err := h.store.Get(r, authSession)
+	if err != nil {
+		return err
+	}
+
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   sessionLength,
+		HttpOnly: true,
+	}
+
+	session.Values[authCookie] = token
+	return session.Save(r, w)
+}
+
+// func (h *handler) authorized(hl http.HandlerFunc) http.HandlerFunc {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if _, ok := h.alreadyLoggedIn(w, r); !ok {
+// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 			return
+// 		}
+// 		hl.ServeHTTP(w, r)
+// 	})
+// }

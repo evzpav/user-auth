@@ -47,6 +47,10 @@ func (us *service) FindByRecoveryToken(ctx context.Context, token string) (*doma
 	return us.storage.FindByRecoveryToken(ctx, token)
 }
 
+func (us *service) FindByGoogleID(ctx context.Context, token string) (*domain.User, error) {
+	return us.storage.FindByGoogleID(ctx, token)
+}
+
 func (us *service) FindByID(ctx context.Context, id int) (*domain.User, error) {
 	return us.storage.FindByID(ctx, id)
 }
