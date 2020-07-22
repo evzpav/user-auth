@@ -8,11 +8,11 @@ import (
 	"gitlab.com/evzpav/user-auth/internal/domain/auth"
 	"gitlab.com/evzpav/user-auth/internal/domain/template"
 	"gitlab.com/evzpav/user-auth/internal/domain/user"
-	"gitlab.com/evzpav/user-auth/pkg/env"
-	"gitlab.com/evzpav/user-auth/pkg/log"
-
+	googlesignin "gitlab.com/evzpav/user-auth/internal/infrastructure/client/google_signin"
 	"gitlab.com/evzpav/user-auth/internal/infrastructure/server/http"
 	mysql "gitlab.com/evzpav/user-auth/internal/infrastructure/storage/mysql"
+	"gitlab.com/evzpav/user-auth/pkg/env"
+	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
 const (
@@ -59,12 +59,11 @@ func main() {
 		log.Fatal().Err(err).Sendf("error creating storage: %v", err)
 	}
 
-	// googleSigninClient := googlesignin.New(getGoogleKey(), getGoogleSecret(), getPlatformURL()+"/auth")
+	googleSigninClient := googlesignin.New(getGoogleKey(), getGoogleSecret(), getPlatformURL()+"/login/google/auth")
 
 	// services
 	userService := user.NewService(userStorage, log)
-	// authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret(), getPlatformURL(), log)
-	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), nil, getPlatformURL(), log)
+	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), googleSigninClient, getPlatformURL(), log)
 	templateService := template.NewService(log)
 
 	// HTTP Server

@@ -1,19 +1,18 @@
 package http
 
 import (
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gorilla/sessions"
-	"github.com/markbates/goth/gothic"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 )
 
 type profile struct {
 	domain.Profile
-	Errors map[string]string
+	Errors     map[string]string
+	GoogleLink string
 }
 
 func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data interface{}) {
@@ -21,6 +20,7 @@ func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
+
 	loginTpl, err := h.templateService.RetrieveParsedTemplate(templateName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -41,6 +41,30 @@ func (h *handler) getLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeTemplate(w, "login", nil)
+}
+
+func (h *handler) getLoginGoogle(w http.ResponseWriter, r *http.Request) {
+	// if _, ok := h.alreadyLoggedIn(w, r); ok {
+	// 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
+	// 	return
+	// }
+
+	session, err := h.store.Get(r, googleSession)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	state := h.authService.GenerateToken()
+	session.Values[googleCookie] = state
+	if err := session.Save(r, w); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	googleSigninLink := h.authService.GetGoogleSigninLink(state)
+
+	http.Redirect(w, r, googleSigninLink, http.StatusTemporaryRedirect)
 }
 
 func (h *handler) getSignup(w http.ResponseWriter, r *http.Request) {
@@ -106,8 +130,6 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	// delete(h.sessions, user.Token)
 
 	session, err := h.store.Get(r, authSession)
 	if err != nil {
@@ -300,42 +322,43 @@ func (h *handler) postNewPassword(w http.ResponseWriter, r *http.Request) {
 	h.writeTemplate(w, "new_password", reply)
 }
 
-func (h *handler) loginWithThirdParty(w http.ResponseWriter, r *http.Request) {
-	key := "google_cookie"
-	maxAge := 86400 * 30 // 30 days
-	isProd := false      // Set to true when serving over https
-
-	store := sessions.NewCookieStore([]byte(key))
-	store.MaxAge(maxAge)
-	store.Options.Path = "/"
-	store.Options.HttpOnly = true // HttpOnly should always be enabled
-	store.Options.Secure = isProd
-
-	h.authService.GoogleAuthentication(w, r, store)
-}
-
-func (h *handler) loginWithThirdPartyCallback(w http.ResponseWriter, r *http.Request) {
-	user, err := gothic.CompleteUserAuth(w, r)
+func (h *handler) googleAuth(w http.ResponseWriter, r *http.Request) {
+	session, err := h.store.Get(r, googleSession)
 	if err != nil {
+		h.log.Error().Err(err).Send(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	t, _ := template.New("foo").Parse(userTemplate)
-	t.Execute(w, user)
-}
 
-var userTemplate = `
-<p><a href="/logout/{{.Provider}}">logout</a></p>
-<p>Name: {{.Name}} [{{.LastName}}, {{.FirstName}}]</p>
-<p>Email: {{.Email}}</p>
-<p>NickName: {{.NickName}}</p>
-<p>Location: {{.Location}}</p>
-<p>AvatarURL: {{.AvatarURL}} <img src="{{.AvatarURL}}"></p>
-<p>Description: {{.Description}}</p>
-<p>UserID: {{.UserID}}</p>
-<p>AccessToken: {{.AccessToken}}</p>
-<p>ExpiresAt: {{.ExpiresAt}}</p>
-<p>RefreshToken: {{.RefreshToken}}</p>
-`
+	queryStateMap := r.URL.Query()
+	queryState := queryStateMap.Get("state")
+
+	sessionState, ok := session.Values[googleCookie]
+	if !ok {
+		h.log.Error().Err(err).Send(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if sessionState.(string) != queryState {
+		h.log.Info().Sendf("Invalid session state: retrieved: %s; Param: %s", sessionState, queryState)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		// w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	code := queryStateMap.Get("code")
+
+	googleUser, err := h.authService.GetGoogleProfile(code)
+	if err != nil {
+		h.log.Error().Err(err).Send(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.log.Info().Sendf("googleuser: %+v\n", googleUser)
+
+}
 
 func (h *handler) getSessionAndSetCookie(w http.ResponseWriter, r *http.Request, token string) error {
 	session, err := h.store.Get(r, authSession)

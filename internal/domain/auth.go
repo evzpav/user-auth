@@ -2,10 +2,7 @@ package domain
 
 import (
 	"context"
-	"net/http"
 	"strings"
-
-	"github.com/gorilla/sessions"
 )
 
 type AuthUser struct {
@@ -52,11 +49,13 @@ func (au *AuthUser) Validate() bool {
 type AuthService interface {
 	Signup(ctx context.Context, authUser *AuthUser) error
 	Authenticate(ctx context.Context, authUser *AuthUser) (*User, error)
-	Me(ctx context.Context) (*User, error)
 	AuthenticateToken(ctx context.Context, token string) (*User, error)
-	GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore)
 	SetNewPassword(ctx context.Context, user *User, password string) error
 	SetUserRecoveryToken(ctx context.Context, email string) (string, error)
 	SendResetPasswordLink(ctx context.Context, authUser *AuthUser)
 	GenerateToken() string
+
+	//Google
+	GetGoogleSigninLink(state string) string
+	GetGoogleProfile(code string) (*GoogleUser, error)
 }

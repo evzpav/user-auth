@@ -4,13 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"net/http"
 	"net/smtp"
 
-	"github.com/gorilla/sessions"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/google"
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/errors"
@@ -22,24 +17,28 @@ type service struct {
 	userService     domain.UserService
 	emailFrom       string
 	emailPassword   string
-	googleKey       string
-	googleSecret    string
-	platformURL     string
 	googleSigninCli domain.GoogleSigner
+	platformURL     string
 	log             log.Logger
 }
 
 func NewService(userService domain.UserService, emailFrom, emailPassword string, googleSigninCli domain.GoogleSigner, platformURL string, log log.Logger) *service {
 	return &service{
-		userService:   userService,
-		emailFrom:     emailFrom,
-		emailPassword: emailPassword,
-		// googleKey:     googleKey,
-		// googleSecret:  googleSecret,
+		userService:     userService,
+		emailFrom:       emailFrom,
+		emailPassword:   emailPassword,
 		googleSigninCli: googleSigninCli,
 		platformURL:     platformURL,
 		log:             log,
 	}
+}
+
+func (s *service) GetGoogleSigninLink(state string) string {
+	return s.googleSigninCli.GetLoginURL(state)
+}
+
+func (s *service) GetGoogleProfile(code string) (*domain.GoogleUser, error) {
+	return s.googleSigninCli.GetProfile(code)
 }
 
 func (s *service) hashPassword(password string) (string, error) {
@@ -113,9 +112,6 @@ func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
 	return s.userService.Create(ctx, user)
 }
 
-func (s *service) Me(ctx context.Context) (*domain.User, error) {
-	return nil, nil
-}
 
 func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
 	user, err := s.userService.FindByToken(ctx, token)
@@ -146,22 +142,6 @@ func (s *service) sendEmail(ctx context.Context, message []byte, toEmail string)
 	s.log.Debug().Sendf("Sending email with message: %s", message)
 
 	return smtp.SendMail(smtpHost+":"+smtpPort, auth, s.emailFrom, to, message)
-}
-
-func (s *service) GoogleAuthentication(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore) {
-	gothic.Store = store
-	goth.UseProviders(
-		google.New(s.googleKey, s.googleSecret, s.platformURL+"/login/google/callback"),
-	)
-
-	gothUser, err := gothic.CompleteUserAuth(w, r)
-	if err == nil {
-		fmt.Printf("gothUSER: %+v\n", gothUser)
-		return
-	}
-
-	gothic.BeginAuthHandler(w, r)
-
 }
 
 func (s *service) SetNewPassword(ctx context.Context, user *domain.User, password string) error {

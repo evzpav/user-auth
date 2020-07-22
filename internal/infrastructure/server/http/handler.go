@@ -11,6 +11,8 @@ import (
 
 const authSession string = "user_auth_session"
 const authCookie string = "user_auth"
+const googleSession string = "google_session"
+const googleCookie string = "google_cookie"
 const sessionLength int = 86400 * 7 // 1 week in seconds
 
 type handler struct {
@@ -36,8 +38,8 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 	r.HandleFunc("/", redirectToLogin).Methods("GET")
 	r.HandleFunc("/login", handler.getLogin).Methods("GET")
 	r.HandleFunc("/login", handler.postLogin).Methods("POST")
-	r.HandleFunc("/login/{provider}", handler.loginWithThirdParty).Methods("GET")
-	r.HandleFunc("/login/{provider}/callback", handler.loginWithThirdPartyCallback).Methods("GET")
+	r.HandleFunc("/login/google", handler.getLoginGoogle).Methods("GET")
+	r.HandleFunc("/login/google/auth", handler.googleAuth).Methods("GET")
 	r.HandleFunc("/signup", handler.getSignup).Methods("GET")
 	r.HandleFunc("/signup", handler.postSignup).Methods("POST")
 	r.HandleFunc("/logout", handler.logout).Methods("GET")

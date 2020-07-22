@@ -30,7 +30,7 @@ func New(handler http.Handler, host, port string, log log.Logger) *Server {
 // ListenAndServe ...
 func (s *Server) ListenAndServe() {
 	go func() {
-		s.log.Info().Sendf("Documents is running on %s!", s.server.Addr)
+		s.log.Info().Sendf("user-auth is running on %s!", s.server.Addr)
 
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.log.Error().Err(err).Sendf("Error on ListenAndServe: %q", err)

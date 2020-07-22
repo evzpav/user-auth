@@ -5,24 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"gitlab.com/evzpav/user-auth/internal/domain"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
 type GoogleClient struct {
 	config *oauth2.Config
-}
-
-type User struct {
-	Sub           string `json:"sub"`
-	Name          string `json:"name"`
-	GivenName     string `json:"given_name"`
-	FamilyName    string `json:"family_name"`
-	Profile       string `json:"profile"`
-	Picture       string `json:"picture"`
-	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
-	Gender        string `json:"gender"`
 }
 
 func New(key, secret, redirectURL string) *GoogleClient {
@@ -46,11 +35,12 @@ func (c *GoogleClient) GetLoginURL(state string) string {
 	return c.config.AuthCodeURL(state)
 }
 
-func (c *GoogleClient) GetToken(code string) (*oauth2.Token, error) {
-	return c.config.Exchange(oauth2.NoContext, code)
-}
+func (c *GoogleClient) GetProfile(code string) (*domain.GoogleUser, error) {
+	token, err := c.config.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token: %v", err)
+	}
 
-func (c *GoogleClient) GetProfile(token *oauth2.Token) (*User, error) {
 	client := c.config.Client(oauth2.NoContext, token)
 	userInfo, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
@@ -63,7 +53,7 @@ func (c *GoogleClient) GetProfile(token *oauth2.Token) (*User, error) {
 		return nil, fmt.Errorf("failed to read body in google user info: %v", err)
 	}
 
-	var user User
+	var user domain.GoogleUser
 	if err := json.Unmarshal(data, &user); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user: %v", err)
 	}

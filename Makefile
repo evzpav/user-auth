@@ -59,6 +59,7 @@ build-local: ##@dev Build binary locally
 
 
 run-local: build-local ##@dev Run locally.
+	SESSION_KEY=$(SESSION_KEY) \
 	HOST=localhost \
 	PORT=5001 \
 	LOGGER_LEVEL=debug \
@@ -87,6 +88,7 @@ run-docker: build ##@docker Run docker container.
 	docker run --rm \
 		--name $(NAME) \
 		--network=host \
+		-e SESSION_KEY=$(SESSION_KEY) \
 		-e HOST=localhost \
 		-e PORT=8080 \
 		-e LOGGER_LEVEL=debug \
