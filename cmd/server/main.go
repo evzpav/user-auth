@@ -8,7 +8,9 @@ import (
 	"gitlab.com/evzpav/user-auth/internal/domain/auth"
 	"gitlab.com/evzpav/user-auth/internal/domain/template"
 	"gitlab.com/evzpav/user-auth/internal/domain/user"
+	googlemaps "gitlab.com/evzpav/user-auth/internal/infrastructure/client/google_maps"
 	googlesignin "gitlab.com/evzpav/user-auth/internal/infrastructure/client/google_signin"
+
 	"gitlab.com/evzpav/user-auth/internal/infrastructure/server/http"
 	mysql "gitlab.com/evzpav/user-auth/internal/infrastructure/storage/mysql"
 	"gitlab.com/evzpav/user-auth/pkg/env"
@@ -25,6 +27,7 @@ const (
 	envVarEmailFrom     = "EMAIL_FROM"
 	envVarGoogleKey     = "GOOGLE_KEY"
 	envVarGoogleSecret  = "GOOGLE_SECRET"
+	envVarGoogleMapsKey = "GOOGLE_MAPS_API_KEY"
 	envVarSessionKey    = "SESSION_KEY"
 
 	defaultProjectPort = "5001"
@@ -40,7 +43,7 @@ func main() {
 
 	log.Info().Sendf("user-auth - build:%s; date:%s", build, date)
 
-	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret, envVarPlatformURL)
+	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret, envVarGoogleMapsKey, envVarPlatformURL)
 
 	db, err := mysql.New(getMySQLURL())
 	if err != nil {
@@ -59,12 +62,17 @@ func main() {
 		log.Fatal().Err(err).Sendf("error creating storage: %v", err)
 	}
 
+	//clients
 	googleSigninClient := googlesignin.New(getGoogleKey(), getGoogleSecret(), getPlatformURL()+"/login/google/auth")
+	googleMapsClient, err := googlemaps.New(getGoogleMapsKey())
+	if err != nil {
+		log.Warn().Err(err).Sendf("failed to initiate google maps client: %v", err)
+	}
 
 	// services
 	userService := user.NewService(userStorage, log)
 	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), googleSigninClient, getPlatformURL(), log)
-	templateService := template.NewService(log)
+	templateService := template.NewService(googleMapsClient, log)
 
 	// HTTP Server
 	handler := http.NewHandler(userService, authService, templateService, getSessionKey(), log)
@@ -116,4 +124,8 @@ func getGoogleSecret() string {
 
 func getSessionKey() string {
 	return env.GetString(envVarSessionKey)
+}
+
+func getGoogleMapsKey() string {
+	return env.GetString(envVarGoogleMapsKey)
 }

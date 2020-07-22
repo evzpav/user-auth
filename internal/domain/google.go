@@ -16,3 +16,7 @@ type GoogleSigner interface {
 	GetLoginURL(state string) string
 	GetProfile(code string) (*GoogleUser, error)
 }
+
+type GoogleMapper interface {
+	GetAddressSuggestion(input string) (*AutocompletePrediction, error)
+}

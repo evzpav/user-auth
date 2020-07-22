@@ -10,4 +10,5 @@ type HTMLTemplate struct {
 
 type TemplateService interface {
 	RetrieveParsedTemplate(name string) (*HTMLTemplate, error)
+	GetAddressSuggestion(input string) (*AutocompletePrediction, error)
 }

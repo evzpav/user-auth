@@ -83,16 +83,18 @@
 
     function getAddressSuggestion(el) {
         const inputValue = el.value;
+
+        if(inputValue && inputValue.length < 3) {
+            return;
+        }
         
         if (timer) {
             clearTimeout(timer);
         }
 
-        timer = setTimeout(function(){
+        timer = setTimeout(() => {
             loadSuggestions(inputValue)
-        }, 500);
- 
-      
+        }, 500);  
 
     }
 
@@ -101,10 +103,11 @@
 
         xhr.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                console.log(xhr.response)
                 if (xhr.response) {
                     const resp = JSON.parse(xhr.response)
-                    document.getElementById("address").value = resp.suggestion;
+                    if (resp && resp.suggestion) {
+                        document.getElementById("address").value = resp.suggestion; 
+                    }
                 }
             }
         };

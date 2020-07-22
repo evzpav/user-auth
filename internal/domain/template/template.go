@@ -10,11 +10,12 @@ import (
 )
 
 type service struct {
-	templatesPath string
-	log           log.Logger
+	googleMapsClient domain.GoogleMapper
+	templatesPath    string
+	log              log.Logger
 }
 
-func NewService(log log.Logger) *service {
+func NewService(googleMapsClient domain.GoogleMapper, log log.Logger) *service {
 	pwd, err := os.Getwd()
 	if err != nil {
 		log.Fatal().Err(err)
@@ -23,8 +24,9 @@ func NewService(log log.Logger) *service {
 	templatesPath := pwd + "/internal/domain/template/pages/"
 
 	return &service{
-		templatesPath: templatesPath,
-		log:           log,
+		googleMapsClient: googleMapsClient,
+		templatesPath:    templatesPath,
+		log:              log,
 	}
 }
 
@@ -40,4 +42,8 @@ func (s *service) RetrieveParsedTemplate(name string) (*domain.HTMLTemplate, err
 		Template: pageTpl,
 	}, nil
 
+}
+
+func (s *service) GetAddressSuggestion(input string) (*domain.AutocompletePrediction, error) {
+	return s.googleMapsClient.GetAddressSuggestion(input)
 }

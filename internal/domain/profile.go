@@ -20,3 +20,7 @@ func (p *Profile) Validate() error {
 	}
 	return nil
 }
+
+type AutocompletePrediction struct {
+	Suggestion string `json:"suggestion"`
+}

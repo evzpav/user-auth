@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -72,4 +73,29 @@ func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeTemplate(w, "profile", userProfile)
+}
+
+func (h *handler) getAddressSuggestion(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+	addressInput := queryParams.Get("q")
+
+	if len(addressInput) < 3 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	suggestion, err := h.templateService.GetAddressSuggestion(addressInput)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	bs, err := json.Marshal(suggestion)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(bs)
 }

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -70,32 +69,6 @@ func NewHandler(userService domain.UserService, authService domain.AuthService, 
 
 func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusMovedPermanently)
-}
-
-func (h *handler) getAddressSuggestion(w http.ResponseWriter, r *http.Request) {
-	h.log.Debug().Sendf("ADDRESSS")
-
-	queryParams := r.URL.Query()
-
-	addressInput := queryParams.Get("q")
-	if addressInput == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	//GOOgle api
-
-	suggestion := make(map[string]string)
-	suggestion["suggestion"] = "suggestion"
-
-	bs, err := json.Marshal(suggestion)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	
-	w.WriteHeader(http.StatusOK)
-	w.Write(bs)
 }
 
 func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
