@@ -38,7 +38,7 @@
         <label class="block text-grey-darker text-sm font-bold mb-2">
             Address
         </label>
-        <input type="text" name="address" placeholder="address" value="{{.Profile.Address}}" class="profile-input shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight">
+        <input type="text" name="address"  id="address" placeholder="address" value="{{.Profile.Address}}" class="profile-input shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker leading-tight" oninput="getAddressSuggestion(this)">
         <p class="profile-value">{{.Profile.Address}}</p>
         {{ with .Errors }}
         <p class="error">{{ .Address }}</p>
@@ -67,6 +67,7 @@
     </button>
 </form>
 <script type="text/javascript">
+    let timer = null;
 
     function editProfile(){
         document.querySelectorAll(".profile-input").forEach(input =>{
@@ -78,6 +79,38 @@
         });
 
         document.querySelector("#submit-button").removeAttribute("disabled");
+    }
+
+    function getAddressSuggestion(el) {
+        const inputValue = el.value;
+        
+        if (timer) {
+            clearTimeout(timer);
+        }
+
+        timer = setTimeout(function(){
+            loadSuggestions(inputValue)
+        }, 500);
+ 
+      
+
+    }
+
+    function loadSuggestions(inputValue) {
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                console.log(xhr.response)
+                if (xhr.response) {
+                    const resp = JSON.parse(xhr.response)
+                    document.getElementById("address").value = resp.suggestion;
+                }
+            }
+        };
+        xhr.open("GET", `/address?q=${inputValue}`, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.send();
     }
 
 </script>
