@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/log"
 )
@@ -14,6 +15,12 @@ const authCookie string = "user_auth"
 const googleSession string = "google_session"
 const googleCookie string = "google_cookie"
 const sessionLength int = 86400 * 7 // 1 week in seconds
+
+var defaultSessionOptions = &sessions.Options{
+	Path:     "/",
+	HttpOnly: true,
+	MaxAge:   sessionLength,
+}
 
 type profile struct {
 	domain.Profile
@@ -64,6 +71,7 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
+	ctx := r.Context()
 	session, err := h.store.Get(r, authSession)
 	if err != nil {
 		return nil, false
@@ -74,11 +82,12 @@ func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*doma
 		return nil, false
 	}
 
-	user, err := h.authService.AuthenticateToken(r.Context(), token.(string))
+	user, err := h.authService.AuthenticateToken(ctx, token.(string))
 	if err != nil {
 		return nil, false
 	}
 
+	session.Options = defaultSessionOptions
 	session.Values[authCookie] = user.Token
 	if err := session.Save(r, w); err != nil {
 		return nil, false
@@ -106,28 +115,13 @@ func (h *handler) writeTemplate(w http.ResponseWriter, templateName string, data
 	}
 }
 
-func (h *handler) getSessionAndSetCookie(w http.ResponseWriter, r *http.Request, token string) error {
-	session, err := h.store.Get(r, authSession)
+func (h *handler) getSessionAndSetCookie(w http.ResponseWriter, r *http.Request, token, sessionName, cookieName string, options *sessions.Options) error {
+	session, err := h.store.Get(r, sessionName)
 	if err != nil {
 		return err
 	}
 
-	session.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   sessionLength,
-		HttpOnly: true,
-	}
-
-	session.Values[authCookie] = token
+	session.Options = options
+	session.Values[cookieName] = token
 	return session.Save(r, w)
 }
-
-// func (h *handler) authorized(hl http.HandlerFunc) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if _, ok := h.alreadyLoggedIn(w, r); !ok {
-// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
-// 			return
-// 		}
-// 		hl.ServeHTTP(w, r)
-// 	})
-// }

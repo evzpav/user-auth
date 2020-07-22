@@ -56,9 +56,10 @@ type AuthService interface {
 	SetUserRecoveryToken(ctx context.Context, email string) (string, error)
 	SendResetPasswordLink(ctx context.Context, authUser *AuthUser)
 	GenerateToken() string
+	SetToken(ctx context.Context, user *User) (*User, error)
 
 	//Google
 	GetGoogleSigninLink(state string) string
 	GetGoogleProfile(code string) (*GoogleUser, error)
-	SignupWithGoogle(ctx context.Context, authUser *AuthUser) error
+	SignupWithGoogle(ctx context.Context, authUser *AuthUser) (*User, error)
 }

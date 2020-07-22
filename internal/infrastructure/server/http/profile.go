@@ -29,6 +29,12 @@ func (h *handler) getProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
+	user, ok := h.alreadyLoggedIn(w, r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	ctx := r.Context()
 	idStr := r.FormValue("id")
 	id, err := strconv.Atoi(idStr)
@@ -51,13 +57,6 @@ func (h *handler) postProfile(w http.ResponseWriter, r *http.Request) {
 	if err := userProfile.Validate(); err != nil {
 		h.log.Error().Err(err).Sendf("invalid user attributes")
 		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	user, err := h.userService.FindByID(ctx, id)
-	if err != nil {
-		h.log.Error().Err(err).Sendf("failed to find user")
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

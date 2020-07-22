@@ -17,6 +17,11 @@ func (h *handler) getLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		return
+	}
+
 	authUser := domain.NewAuthUser(r.FormValue("email"), r.FormValue("password"))
 	if !authUser.Validate() {
 		w.WriteHeader(http.StatusBadRequest)
@@ -31,7 +36,8 @@ func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.getSessionAndSetCookie(w, r, user.Token); err != nil {
+	err = h.getSessionAndSetCookie(w, r, user.Token, authSession, authCookie, defaultSessionOptions)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		h.writeTemplate(w, "login", authUser)
 		return
@@ -47,24 +53,16 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.store.Get(r, authSession)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	session.Options = &sessions.Options{
+	deleteCookieOptions := &sessions.Options{
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
 	}
 
-	if err := session.Save(r, w); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	user.Token = ""
+
+	_ = h.getSessionAndSetCookie(w, r, user.Token, authSession, authCookie, deleteCookieOptions)
+	_ = h.getSessionAndSetCookie(w, r, user.Token, googleSession, googleCookie, deleteCookieOptions)
 
 	if err := h.userService.Update(r.Context(), user); err != nil {
 		h.log.Error().Err(err).Sendf("failed to update user token")

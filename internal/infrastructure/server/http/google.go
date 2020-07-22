@@ -7,21 +7,18 @@ import (
 )
 
 func (h *handler) getLoginGoogle(w http.ResponseWriter, r *http.Request) {
-	// if _, ok := h.alreadyLoggedIn(w, r); ok {
-	// 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
-	// 	return
-	// }
-
-	session, err := h.store.Get(r, googleSession)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
 
 	state := h.authService.GenerateToken()
-	session.Values[googleCookie] = state
-	if err := session.Save(r, w); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+
+	err := h.getSessionAndSetCookie(w, r, state, googleSession, googleCookie, defaultSessionOptions)
+	if err != nil {
+		h.log.Info().Sendf("failed to get session and set cookie")
+		w.WriteHeader(http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -32,11 +29,17 @@ func (h *handler) getLoginGoogle(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) googleAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		return
+	}
 
 	session, err := h.store.Get(r, googleSession)
 	if err != nil {
-		h.log.Error().Err(err).Send(err.Error())
+		h.log.Info().Err(err).Send(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -45,12 +48,20 @@ func (h *handler) googleAuth(w http.ResponseWriter, r *http.Request) {
 
 	sessionState, ok := session.Values[googleCookie]
 	if !ok {
-		h.log.Error().Err(err).Send(err.Error())
+		h.log.Info().Send("failed to get session state")
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	sessionStateStr, ok := sessionState.(string)
+	if !ok {
+		h.log.Info().Send("failed to cast session state")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if sessionState.(string) != queryState {
+	if sessionStateStr != queryState {
 		h.log.Info().Sendf("Invalid session state: retrieved: %s; Param: %s", sessionState, queryState)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -60,50 +71,57 @@ func (h *handler) googleAuth(w http.ResponseWriter, r *http.Request) {
 
 	googleUser, err := h.authService.GetGoogleProfile(code)
 	if err != nil {
-		h.log.Error().Err(err).Send(err.Error())
+		h.log.Info().Err(err).Send(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if !googleUser.EmailVerified {
+	if !googleUser.EmailVerified || googleUser.Sub == "" {
+		h.log.Info().Send("email not verified or googleID empty")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	user, err := h.userService.FindByGoogleID(ctx, googleUser.Sub)
 	if err != nil {
-		h.log.Error().Err(err).Send(err.Error())
+		h.log.Info().Err(err).Send(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if user == nil {
-		authUser := &domain.AuthUser{
-			Email:    googleUser.Email,
-			Password: googleUser.Sub,
-			Name:     googleUser.Name,
-			GoogleID: googleUser.Sub,
-		}
+	authUser := &domain.AuthUser{
+		Email:    googleUser.Email,
+		Password: googleUser.Sub,
+		Name:     googleUser.Name,
+		GoogleID: googleUser.Sub,
+	}
 
-		if err := h.authService.SignupWithGoogle(ctx, authUser); err != nil {
+	if user == nil {
+		user, err = h.authService.SignupWithGoogle(ctx, authUser)
+		if err != nil {
+			h.log.Info().Err(err).Send(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	userProfile := profile{
-		Profile: domain.Profile{
-			ID:      user.ID,
-			Name:    user.Name,
-			Email:   user.Email,
-			Address: user.Address,
-			Phone:   user.Phone,
-		},
-		Errors: make(map[string]string),
+	if user.Name == "" && googleUser.Name != "" {
+		user.Name = googleUser.Name
 	}
 
-	h.writeTemplate(w, "profile", userProfile)
+	user, err = h.authService.SetToken(ctx, user)
+	if err != nil {
+		h.log.Info().Err(err).Send(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	// http.Redirect(w, r, "/profile", http.StatusSeeOther)
+	if err := h.getSessionAndSetCookie(w, r, user.Token, authSession, authCookie, defaultSessionOptions); err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		h.writeTemplate(w, "login", authUser)
+		return
+	}
+
+	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 
 }

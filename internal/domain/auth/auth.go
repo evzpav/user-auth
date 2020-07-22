@@ -75,8 +75,11 @@ func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) (
 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	}
 
+	return s.SetToken(ctx, user)
+}
+
+func (s *service) SetToken(ctx context.Context, user *domain.User) (*domain.User, error) {
 	token := s.GenerateToken()
-	authUser.Token = token
 	user.Token = token
 
 	if err := s.userService.Update(ctx, user); err != nil {
@@ -84,7 +87,6 @@ func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) (
 	}
 
 	return user, nil
-
 }
 
 func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
@@ -112,19 +114,20 @@ func (s *service) Signup(ctx context.Context, authUser *domain.AuthUser) error {
 	return s.userService.Create(ctx, user)
 }
 
-func (s *service) SignupWithGoogle(ctx context.Context, authUser *domain.AuthUser) error {
+
+func (s *service) SignupWithGoogle(ctx context.Context, authUser *domain.AuthUser) (*domain.User, error) {
 	existingUser, err := s.userService.FindByEmail(ctx, authUser.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if existingUser != nil {
-		return nil
+		return existingUser, nil
 	}
 
 	hashedPassword, err := s.hashPassword(authUser.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user := &domain.User{
@@ -144,7 +147,11 @@ func (s *service) SignupWithGoogle(ctx context.Context, authUser *domain.AuthUse
 		user.GoogleID = authUser.GoogleID
 	}
 
-	return s.userService.Create(ctx, user)
+	if err = s.userService.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.User, error) {
@@ -156,7 +163,7 @@ func (s *service) AuthenticateToken(ctx context.Context, token string) (*domain.
 		return nil, errors.NewNotAuthorized(domain.ErrInvalidCredentials)
 	}
 
-	user.Token = s.GenerateToken()
+	// user.Token = s.GenerateToken()
 
 	return user, s.userService.Update(ctx, user)
 }

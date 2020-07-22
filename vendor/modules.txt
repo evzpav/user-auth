@@ -16,12 +16,6 @@ github.com/go-playground/locales/currency
 github.com/go-playground/universal-translator
 # github.com/go-sql-driver/mysql v1.5.0
 github.com/go-sql-driver/mysql
-# github.com/golang-migrate/migrate v3.5.4+incompatible
-github.com/golang-migrate/migrate
-github.com/golang-migrate/migrate/database
-github.com/golang-migrate/migrate/database/mysql
-github.com/golang-migrate/migrate/source
-github.com/golang-migrate/migrate/source/file
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 # github.com/gorilla/context v1.1.1
@@ -41,10 +35,6 @@ github.com/jinzhu/inflection
 github.com/json-iterator/go
 # github.com/leodido/go-urn v1.1.0
 github.com/leodido/go-urn
-# github.com/markbates/goth v1.64.2
-github.com/markbates/goth
-github.com/markbates/goth/gothic
-github.com/markbates/goth/providers/google
 # github.com/mattn/go-isatty v0.0.9
 github.com/mattn/go-isatty
 # github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421
@@ -59,7 +49,7 @@ github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
 # github.com/satori/go.uuid v1.2.0
 github.com/satori/go.uuid
-# github.com/stretchr/testify v1.4.0
+# github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 # github.com/ugorji/go/codec v1.1.7
 github.com/ugorji/go/codec

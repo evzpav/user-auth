@@ -16,6 +16,11 @@ func (h *handler) getSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.alreadyLoggedIn(w, r); ok {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		return
+	}
+
 	authUser := domain.NewAuthUser(r.FormValue("email"), r.FormValue("password"))
 	if !authUser.Validate() {
 		w.WriteHeader(http.StatusBadRequest)
@@ -29,7 +34,7 @@ func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.getSessionAndSetCookie(w, r, authUser.Token); err != nil {
+	if err := h.getSessionAndSetCookie(w, r, authUser.Token, authSession, authCookie, defaultSessionOptions); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		h.writeTemplate(w, "signup", authUser)
 		return
