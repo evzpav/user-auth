@@ -25,6 +25,7 @@ const (
 	envVarEmailFrom     = "EMAIL_FROM"
 	envVarGoogleKey     = "GOOGLE_KEY"
 	envVarGoogleSecret  = "GOOGLE_SECRET"
+	envVarSessionKey    = "SESSION_KEY"
 
 	defaultProjectPort = "5001"
 	defaultLoggerLevel = "info"
@@ -37,7 +38,7 @@ var (
 func main() {
 	log := log.NewZeroLog("user-auth", version, log.Level(getLoggerLevel()))
 
-	log.Info().Sendf("use-auth - build:%s; date:%s", build, date)
+	log.Info().Sendf("user-auth - build:%s; date:%s", build, date)
 
 	env.CheckRequired(log, envVarMySQLURL, envVarEmailFrom, envVarEmailPassword, envVarGoogleKey, envVarGoogleSecret, envVarPlatformURL)
 
@@ -58,13 +59,16 @@ func main() {
 		log.Fatal().Err(err).Sendf("error creating storage: %v", err)
 	}
 
+	// googleSigninClient := googlesignin.New(getGoogleKey(), getGoogleSecret(), getPlatformURL()+"/auth")
+
 	// services
 	userService := user.NewService(userStorage, log)
-	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret(), getPlatformURL(), log)
+	// authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), getGoogleKey(), getGoogleSecret(), getPlatformURL(), log)
+	authService := auth.NewService(userService, getEmailFrom(), getEmailPassword(), nil, getPlatformURL(), log)
 	templateService := template.NewService(log)
 
 	// HTTP Server
-	handler := http.NewHandler(userService, authService, templateService, log)
+	handler := http.NewHandler(userService, authService, templateService, getSessionKey(), log)
 	server := http.New(handler, getProjectHost(), getProjectPort(), log)
 	server.ListenAndServe()
 
@@ -109,4 +113,8 @@ func getGoogleKey() string {
 
 func getGoogleSecret() string {
 	return env.GetString(envVarGoogleSecret)
+}
+
+func getSessionKey() string {
+	return env.GetString(envVarSessionKey)
 }

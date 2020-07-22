@@ -87,7 +87,7 @@ run-docker: build ##@docker Run docker container.
 	docker run --rm \
 		--name $(NAME) \
 		--network=host \
-		-e HOST=http://localhost \
+		-e HOST=localhost \
 		-e PORT=8080 \
 		-e LOGGER_LEVEL=debug \
 		-e EMAIL_FROM=$(EMAIL_FROM) \

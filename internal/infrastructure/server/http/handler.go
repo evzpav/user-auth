@@ -2,43 +2,31 @@ package http
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"gitlab.com/evzpav/user-auth/internal/domain"
 	"gitlab.com/evzpav/user-auth/pkg/log"
 )
 
-const authCookie string = "user_auth_session"
-const sessionLength int = 3600 // 1 hour in seconds
-
-type session struct {
-	*domain.User
-	ExpireTime time.Time
-}
-
-func newSession(user *domain.User) *session {
-	return &session{
-		User:       user,
-		ExpireTime: time.Now().UTC().Add(time.Second * time.Duration(sessionLength)),
-	}
-}
+const authSession string = "user_auth_session"
+const authCookie string = "user_auth"
+const sessionLength int = 86400 * 7 // 1 week in seconds
 
 type handler struct {
 	userService     domain.UserService
 	authService     domain.AuthService
 	templateService domain.TemplateService
-	sessions        map[string]*session
+	store           *sessions.CookieStore
 	log             log.Logger
 }
 
-// NewHandler ...
-func NewHandler(userService domain.UserService, authService domain.AuthService, templateService domain.TemplateService, log log.Logger) http.Handler {
+func NewHandler(userService domain.UserService, authService domain.AuthService, templateService domain.TemplateService, sessionKey string, log log.Logger) http.Handler {
 	handler := &handler{
 		userService:     userService,
 		authService:     authService,
 		templateService: templateService,
-		sessions:        make(map[string]*session),
+		store:           sessions.NewCookieStore([]byte(sessionKey)),
 		log:             log,
 	}
 
@@ -68,31 +56,25 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) alreadyLoggedIn(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
-	h.cleanExpiredSessions()
-
-	c, err := r.Cookie(authCookie)
+	session, err := h.store.Get(r, authSession)
 	if err != nil {
 		return nil, false
 	}
 
-	token := c.Value
+	token, ok := session.Values[authCookie]
+	if !ok {
+		return nil, false
+	}
 
-	// session, ok := h.sessions[token]
-	// if ok {
-	// 	c.MaxAge = sessionLength
-	// 	http.SetCookie(w, c)
-	// 	return session.User, true
-	// }
-
-	user, err := h.authService.AuthenticateToken(r.Context(), token)
+	user, err := h.authService.AuthenticateToken(r.Context(), token.(string))
 	if err != nil {
 		return nil, false
 	}
 
-	// h.sessions[user.Token] = newSession(user)
-
-	newCookie := newCookie(user.Token, sessionLength)
-	http.SetCookie(w, newCookie)
+	session.Values[authCookie] = user.Token
+	if err := session.Save(r, w); err != nil {
+		return nil, false
+	}
 
 	return user, true
 }
@@ -105,20 +87,4 @@ func (h *handler) authorized(hl http.HandlerFunc) http.HandlerFunc {
 		}
 		hl.ServeHTTP(w, r)
 	})
-}
-
-func newCookie(token string, age int) *http.Cookie {
-	return &http.Cookie{
-		Name:   authCookie,
-		Value:  token,
-		MaxAge: age,
-	}
-}
-
-func (h *handler) cleanExpiredSessions() {
-	for k, s := range h.sessions {
-		if time.Now().UTC().After(s.ExpireTime) {
-			delete(h.sessions, k)
-		}
-	}
 }

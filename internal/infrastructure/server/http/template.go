@@ -55,6 +55,7 @@ func (h *handler) getSignup(w http.ResponseWriter, r *http.Request) {
 func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
 	authUser := domain.NewAuthUser(r.FormValue("email"), r.FormValue("password"))
 	if !authUser.Validate() {
+		w.WriteHeader(http.StatusBadRequest)
 		h.writeTemplate(w, "login", authUser)
 		return
 	}
@@ -66,8 +67,11 @@ func (h *handler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := newCookie(user.Token, sessionLength)
-	http.SetCookie(w, c)
+	if err := h.getSessionAndSetCookie(w, r, user.Token); err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		h.writeTemplate(w, "login", authUser)
+		return
+	}
 
 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 }
@@ -86,8 +90,11 @@ func (h *handler) postSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := newCookie(authUser.Token, sessionLength)
-	http.SetCookie(w, c)
+	if err := h.getSessionAndSetCookie(w, r, authUser.Token); err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		h.writeTemplate(w, "signup", authUser)
+		return
+	}
 
 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 
@@ -100,10 +107,21 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	delete(h.sessions, user.Token)
+	// delete(h.sessions, user.Token)
 
-	c := newCookie("", -1)
-	http.SetCookie(w, c)
+	session, err := h.store.Get(r, authSession)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	}
+
+	session.Save(r, w)
 
 	user.Token = ""
 
@@ -318,3 +336,19 @@ var userTemplate = `
 <p>ExpiresAt: {{.ExpiresAt}}</p>
 <p>RefreshToken: {{.RefreshToken}}</p>
 `
+
+func (h *handler) getSessionAndSetCookie(w http.ResponseWriter, r *http.Request, token string) error {
+	session, err := h.store.Get(r, authSession)
+	if err != nil {
+		return err
+	}
+
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   sessionLength,
+		HttpOnly: true,
+	}
+
+	session.Values[authCookie] = token
+	return session.Save(r, w)
+}

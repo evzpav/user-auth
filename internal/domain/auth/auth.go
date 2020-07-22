@@ -19,24 +19,26 @@ import (
 )
 
 type service struct {
-	userService   domain.UserService
-	emailFrom     string
-	emailPassword string
-	googleKey     string
-	googleSecret  string
-	platformURL   string
-	log           log.Logger
+	userService     domain.UserService
+	emailFrom       string
+	emailPassword   string
+	googleKey       string
+	googleSecret    string
+	platformURL     string
+	googleSigninCli domain.GoogleSigner
+	log             log.Logger
 }
 
-func NewService(userService domain.UserService, emailFrom, emailPassword, googleKey, googleSecret, platformURL string, log log.Logger) *service {
+func NewService(userService domain.UserService, emailFrom, emailPassword string, googleSigninCli domain.GoogleSigner, platformURL string, log log.Logger) *service {
 	return &service{
 		userService:   userService,
 		emailFrom:     emailFrom,
 		emailPassword: emailPassword,
-		googleKey:     googleKey,
-		googleSecret:  googleSecret,
-		platformURL:   platformURL,
-		log:           log,
+		// googleKey:     googleKey,
+		// googleSecret:  googleSecret,
+		googleSigninCli: googleSigninCli,
+		platformURL:     platformURL,
+		log:             log,
 	}
 }
 
@@ -56,36 +58,6 @@ func (s *service) GenerateToken() string {
 	sID := uuid.NewV4()
 	return sID.String()
 }
-
-// func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) error {
-// 	u, err := s.userService.FindByEmail(ctx, authUser.Email)
-// 	if err != nil {
-// 		authUser.Errors["Credentials"] = "invalid credentials"
-// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	if u == nil {
-// 		authUser.Errors["Credentials"] = "invalid credentials"
-// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	if !s.hashMatchesPassword(u.Password, authUser.Password) {
-// 		authUser.Errors["Credentials"] = "invalid credentials"
-// 		return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	}
-
-// 	token := s.GenerateToken()
-// 	authUser.Token = token
-// 	u.Token = token
-
-// 	// u.Token, err = s.GenerateJWTToken(u)
-// 	// if err != nil {
-// 	// 	return errors.NewNotAuthorized(domain.ErrInvalidCredentials)
-// 	// }
-
-// 	return s.userService.Update(ctx, u)
-
-// }
 
 func (s *service) Authenticate(ctx context.Context, authUser *domain.AuthUser) (*domain.User, error) {
 	user, err := s.userService.FindByEmail(ctx, authUser.Email)
