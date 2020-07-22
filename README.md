@@ -1,6 +1,7 @@
 # User Auth
 
 It is a server side web app using Go templates that allows user to signup, login, reset password, see and edit profile.
+Persistance using MySql.
 
 ## Getting Started
 
@@ -13,11 +14,16 @@ It is a server side web app using Go templates that allows user to signup, login
 ### Environment variables
 
 ```bash
-DOCUMENTS_HOST=localhost
-DOCUMENTS_PORT=8080
-LOGGER_LEVEL=error #values: error; warn; info; debug;
-MONGO_URL=localhost:27017
-
+	SESSION_KEY
+	HOST
+	PORT
+	LOGGER_LEVEL
+	EMAIL_FROM
+	EMAIL_PASSWORD
+	GOOGLE_KEY
+	GOOGLE_SECRET
+	PLATFORM_URL
+	DATABASE_URL
 ```
 
 ### Installing and running locally
@@ -26,19 +32,15 @@ MONGO_URL=localhost:27017
 #Run mongo locally
 make run-mysql
 
-#Run server locally or
+#then 
+
+#Run server locally 
 make run-local
+
+# or
 
 #Run on docker
 make run-docker
-```
-
-## Deployment
-
-### Build
-
-```bash
-make build
 ```
 
 ## Contributing

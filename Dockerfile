@@ -6,7 +6,6 @@ WORKDIR $GOPATH/src/gitlab.com/user-auth
 FROM base AS dependencies
 ENV GO111MODULE=on
 COPY . .
-RUN ls -l
 
 # ---- Build ----
 FROM dependencies AS build

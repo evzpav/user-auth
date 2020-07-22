@@ -96,5 +96,6 @@ run-docker: build ##@docker Run docker container.
 		-e EMAIL_PASSWORD=$(EMAIL_PASSWORD) \
 		-e GOOGLE_KEY=$(GOOGLE_KEY) \
 		-e GOOGLE_SECRET=$(GOOGLE_SECRET) \
+		-e PLATFORM_URL=$(PLATFORM_URL) \
 		-e DATABASE_URL=root:$(MYSQL_PASSWORD)@\(localhost:3306\)/user_auth?charset=utf8 \
 		$(IMAGE)
