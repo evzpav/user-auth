@@ -44,6 +44,12 @@ make run-local
 make run-docker
 ```
 
+## TODO
+	- API coupled with html template rendering
+	- Improve http logs
+	- Improve error handling
+	- Refactor user service and user storage to reduce repetition
+	
 ## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) documentation for more details.
